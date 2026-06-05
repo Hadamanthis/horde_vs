@@ -9,6 +9,8 @@ class_name Ally
 @export var attack_interval: float = 0.45
 @export var ally_type: String = "slime"
 @export var attack_mode: String = "melee"
+@export var attack_command_radius: float = 9999.0
+@export var pursuit_hit_radius: float = 24.0
 @export var attack_dash_speed: float = 360.0
 @export var attack_dash_windup_time: float = 0.18
 @export var attack_dash_duration: float = 0.24
@@ -62,6 +64,12 @@ func _physics_process(delta: float) -> void:
 		_process_dash(delta)
 		return
 
+	if attack_mode == "pursuit" and _attack_timer == 0.0 and _is_inside_command_radius():
+		var pursuit_enemy: Enemy = _find_nearest_enemy()
+		if pursuit_enemy:
+			_process_pursuit_attack(pursuit_enemy, delta)
+			return
+
 	# A orbita evita IA complexa e deixa a horda facil de ler ao redor do jogador.
 	var ring: int = floori(float(slot_index) / 10.0)
 	var members_in_ring: int = mini(slot_count - ring * 10, 10)
@@ -101,6 +109,22 @@ func _process_dash(delta: float) -> void:
 
 	if _dash_timer == 0.0:
 		_dash_hit_enemies.clear()
+		_attack_timer = attack_interval
+
+
+func _process_pursuit_attack(enemy: Enemy, delta: float) -> void:
+	# O bat aliado preserva a fantasia de criatura rapida: sai da orbita, morde e volta.
+	var to_enemy: Vector2 = enemy.global_position - global_position
+	if to_enemy.length() <= pursuit_hit_radius:
+		enemy.take_damage(attack_damage)
+		_spawn_damage_feedback(enemy.global_position)
+		_start_attack_cooldown()
+		_update_attack_feedback(delta)
+		return
+
+	velocity = to_enemy.normalized() * move_speed
+	move_and_slide()
+	visual.scale = Vector2.ONE * 1.12
 
 
 func _update_attack_feedback(delta: float) -> void:
@@ -119,11 +143,16 @@ func _find_nearest_enemy() -> Enemy:
 
 
 func _try_attack() -> void:
+	if not _is_inside_command_radius():
+		return
+
 	match attack_mode:
 		"aura":
 			_try_aura_attack()
 		"dash":
 			_try_single_target_attack(true)
+		"pursuit":
+			return
 		_:
 			_try_single_target_attack(false)
 
@@ -170,7 +199,7 @@ func _begin_dash_attack(enemy: Enemy) -> void:
 
 	_dash_hit_enemies.clear()
 	_dash_windup_timer = attack_dash_windup_time
-	_start_attack_cooldown()
+	_attack_flash_timer = attack_flash_time
 
 
 func _damage_enemies_during_dash() -> void:
@@ -195,3 +224,8 @@ func _spawn_damage_feedback(world_position: Vector2) -> void:
 func _start_attack_cooldown() -> void:
 	_attack_timer = attack_interval
 	_attack_flash_timer = attack_flash_time
+
+
+func _is_inside_command_radius() -> bool:
+	# Aliados especiais so atacam se ainda estiverem sob controle da formacao do jogador.
+	return global_position.distance_to(player.global_position) <= attack_command_radius

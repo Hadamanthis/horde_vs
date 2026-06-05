@@ -369,13 +369,17 @@ Status: em andamento.
 - Investida do `Boar` inimigo ficou mais longa e mais facil de perceber.
 - `BoarAlly` deixou de ser um teleporte curto e passou a preparar e investir como criatura propria.
 - Modo `dash` dos aliados agora tem windup, duracao, velocidade e raio de acerto configuraveis.
+- `BoarAlly` so investe quando esta perto o suficiente do jogador e depois precisa voltar para a formacao.
+- `BoarAlly` ganhou cooldown minimo maior depois da investida.
+- `BatAlly` ganhou comportamento de cacador rapido: sai da orbita para morder alvos proximos e retorna.
+- `Game` ganhou `enabled_enemy_types` para testar tipos especificos de inimigos pela cena.
 
 ### Decisao de direcao
 
 O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo aliado ser uma bolinha orbitando com dano parecido, cada tipo deve manter um comportamento reconhecivel:
 
 - slime: unidade simples de corpo a corpo;
-- bat: atacante rapido;
+- bat: cacador rapido que sai e volta da formacao;
 - boar: investida em linha;
 - totem: area/pulso.
 
@@ -389,6 +393,7 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 - Limite por tipo ou custo de slots para criaturas fortes.
 - Indicador simples de composicao atual no debug antes de virar HUD definitivo.
 - Pequenas escolhas de upgrade que interagem com tipos de aliados.
+- Melhorar o `TotemAlly` com feedback visual de pulso e talvez um efeito de protecao/area.
 
 ### Validacao
 

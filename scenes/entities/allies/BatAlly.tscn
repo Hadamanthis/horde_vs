@@ -13,9 +13,12 @@ orbit_radius = 72.0
 orbit_speed = 1.85
 move_speed = 310.0
 attack_damage = 5
-attack_range = 38.0
-attack_interval = 0.38
+attack_range = 115.0
+attack_interval = 0.62
 ally_type = "bat"
+attack_mode = "pursuit"
+attack_command_radius = 150.0
+pursuit_hit_radius = 22.0
 
 [node name="Visual" type="Node2D" parent="."]
 

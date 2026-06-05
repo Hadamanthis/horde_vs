@@ -22,6 +22,7 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingT
 
 @export var conversion_chance: float = 0.2
 @export var ally_limit: int = 5
+@export var enabled_enemy_types: Array[String] = ["slime", "bat", "boar", "totem"]
 @export var max_enemies: int = 42
 @export var spawn_interval: float = 1.15
 @export var match_duration: float = 300.0
@@ -230,7 +231,7 @@ func _start_run() -> void:
 
 	# A partida nasce com uma pequena horda inimiga para o loop aparecer imediatamente.
 	for index in range(initial_enemy_count):
-		_spawn_enemy(index * TAU / initial_enemy_count, SLIME_SCENE)
+		_spawn_enemy(index * TAU / initial_enemy_count, _get_initial_enemy_scene())
 
 	_update_hud()
 
@@ -284,29 +285,68 @@ func _spawn_enemy(forced_angle: float = -1.0, enemy_scene: PackedScene = null) -
 
 func _choose_enemy_scene() -> PackedScene:
 	# Cada tipo novo entra como uma peca capturavel com funcao propria no exercito.
-	var spawn_table: Array[Dictionary] = [
-		{
+	var spawn_table: Array[Dictionary] = []
+
+	if _is_enemy_type_enabled("slime"):
+		spawn_table.append({
 			"scene": SLIME_SCENE,
 			"weight": 1.0,
-		},
-	]
-	if elapsed_time >= bat_start_time:
+		})
+	if _can_spawn_timed_enemy_type("bat", bat_start_time):
 		spawn_table.append({
 			"scene": BAT_SCENE,
 			"weight": bat_spawn_weight,
 		})
-	if elapsed_time >= boar_start_time:
+	if _can_spawn_timed_enemy_type("boar", boar_start_time):
 		spawn_table.append({
 			"scene": BOAR_SCENE,
 			"weight": boar_spawn_weight,
 		})
-	if elapsed_time >= totem_start_time:
+	if _can_spawn_timed_enemy_type("totem", totem_start_time):
 		spawn_table.append({
 			"scene": TOTEM_SCENE,
 			"weight": totem_spawn_weight,
 		})
 
+	if spawn_table.is_empty():
+		return _get_initial_enemy_scene()
+
 	return _pick_weighted_enemy_scene(spawn_table)
+
+
+func _get_initial_enemy_scene() -> PackedScene:
+	# Se um unico tipo estiver ativo, ele nasce desde o inicio para facilitar testes isolados.
+	if _is_only_enabled_enemy_type("bat"):
+		return BAT_SCENE
+	if _is_only_enabled_enemy_type("boar"):
+		return BOAR_SCENE
+	if _is_only_enabled_enemy_type("totem"):
+		return TOTEM_SCENE
+	if _is_enemy_type_enabled("slime"):
+		return SLIME_SCENE
+	if _is_enemy_type_enabled("bat"):
+		return BAT_SCENE
+	if _is_enemy_type_enabled("boar"):
+		return BOAR_SCENE
+	if _is_enemy_type_enabled("totem"):
+		return TOTEM_SCENE
+
+	return SLIME_SCENE
+
+
+func _can_spawn_timed_enemy_type(enemy_type: String, start_time: float) -> bool:
+	if not _is_enemy_type_enabled(enemy_type):
+		return false
+
+	return elapsed_time >= start_time or _is_only_enabled_enemy_type(enemy_type)
+
+
+func _is_enemy_type_enabled(enemy_type: String) -> bool:
+	return enabled_enemy_types.has(enemy_type)
+
+
+func _is_only_enabled_enemy_type(enemy_type: String) -> bool:
+	return enabled_enemy_types.size() == 1 and enabled_enemy_types[0] == enemy_type
 
 
 func _pick_weighted_enemy_scene(spawn_table: Array[Dictionary]) -> PackedScene:
@@ -701,8 +741,9 @@ func _update_debug_info() -> void:
 	var bat_ally_count: int = _count_allies_by_type("bat")
 	var boar_ally_count: int = _count_allies_by_type("boar")
 	var totem_ally_count: int = _count_allies_by_type("totem")
-	debug_label.text = "DEBUG\nEstado: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nSlime:%d Bat:%d Boar:%d Totem:%d\nAliados S:%d B:%d J:%d T:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	debug_label.text = "DEBUG\nEstado: %s\nAtivos: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nSlime:%d Bat:%d Boar:%d Totem:%d\nAliados S:%d B:%d J:%d T:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
 		_get_debug_state_name(),
+		_format_enabled_enemy_types(),
 		_difficulty_progress * 100.0,
 		_current_spawn_interval,
 		_current_max_enemies,
@@ -797,6 +838,19 @@ func _count_allies_by_type(ally_type: String) -> int:
 			ally_count += 1
 
 	return ally_count
+
+
+func _format_enabled_enemy_types() -> String:
+	if enabled_enemy_types.is_empty():
+		return "nenhum"
+
+	var formatted_types: String = ""
+	for enemy_type in enabled_enemy_types:
+		if formatted_types != "":
+			formatted_types += ", "
+		formatted_types += enemy_type
+
+	return formatted_types
 
 
 func _draw() -> void:
