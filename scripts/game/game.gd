@@ -6,6 +6,7 @@ signal xp_collected(amount: int)
 signal level_up(new_level: int)
 signal upgrade_selected(upgrade_id: String)
 signal game_lost
+signal game_won
 
 const SLIME_SCENE: PackedScene = preload("res://scenes/entities/enemies/Slime.tscn")
 const BAT_SCENE: PackedScene = preload("res://scenes/entities/enemies/Bat.tscn")
@@ -19,12 +20,15 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingT
 @export var ally_limit: int = 5
 @export var max_enemies: int = 42
 @export var spawn_interval: float = 1.15
+@export var match_duration: float = 300.0
+@export var max_enemies_at_end: int = 85
+@export var spawn_interval_at_end: float = 0.42
 @export var initial_enemy_count: int = 10
 @export var bat_start_time: float = 25.0
 @export var bat_spawn_chance: float = 0.25
 @export var spawn_safe_margin: float = 160.0
 @export var contact_damage_tick_interval: float = 0.5
-@export var show_debug_info: bool = true
+@export var show_debug_info: bool = false
 
 # Referencias tipadas para os nos da cena principal.
 @onready var world: Node2D = $World as Node2D
@@ -37,7 +41,10 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingT
 @onready var stats_label: Label = $HUD/Stats as Label
 @onready var debug_label: Label = $HUD/DebugInfo as Label
 @onready var hint_label: Label = $HUD/Hint as Label
+@onready var start_panel: PanelContainer = $HUD/StartPanel as PanelContainer
+@onready var start_button: Button = $HUD/StartPanel/Margin/VBox/StartButton as Button
 @onready var game_over_panel: PanelContainer = $HUD/GameOverPanel as PanelContainer
+@onready var game_over_title_label: Label = $HUD/GameOverPanel/Margin/VBox/Title as Label
 @onready var game_over_stats_label: Label = $HUD/GameOverPanel/Margin/VBox/StatsText as Label
 @onready var game_over_restart_button: Button = $HUD/GameOverPanel/Margin/VBox/RestartButton as Button
 @onready var level_up_label: Label = $HUD/LevelUpNotice as Label
@@ -113,13 +120,22 @@ var _last_spawned_enemy_type: String = "-"
 var _last_converted_enemy_type: String = "-"
 var _pending_upgrade_count: int = 0
 var _is_choosing_upgrade: bool = false
+var _game_started: bool = false
 var _game_is_over: bool = false
+var _debug_toggle_was_down: bool = false
+var _difficulty_progress: float = 0.0
+var _current_spawn_interval: float = 1.15
+var _current_max_enemies: int = 42
 
 
 func _ready() -> void:
 	randomize()
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
+	start_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	start_panel.visible = true
+	start_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	start_button.pressed.connect(_start_run)
 	upgrade_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	upgrade_panel.visible = false
 	game_over_panel.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -139,17 +155,26 @@ func _ready() -> void:
 		button.process_mode = Node.PROCESS_MODE_ALWAYS
 		button.pressed.connect(_select_upgrade.bind(index))
 
-	# Comecamos com slimes ao redor do jogador para testar o loop imediatamente.
-	for index in range(initial_enemy_count):
-		_spawn_enemy(index * TAU / initial_enemy_count, SLIME_SCENE)
+	_current_spawn_interval = spawn_interval
+	_current_max_enemies = max_enemies
+	stats_label.visible = false
+	player.set_control_enabled(false)
+	get_tree().paused = true
+	hint_label.text = "Clique em Comecar partida. F3 alterna debug."
+	start_button.grab_focus()
 
 	_update_hud()
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
+	_process_debug_toggle()
+
 	if Input.is_key_pressed(KEY_R):
 		_restart_run()
+
+	if not _game_started:
+		return
 
 	if _is_choosing_upgrade:
 		_process_upgrade_shortcuts()
@@ -160,6 +185,7 @@ func _process(delta: float) -> void:
 		return
 
 	elapsed_time += delta
+	_update_match_progression()
 	_spawn_timer -= delta
 	_attack_timer -= delta
 	_contact_damage_timer -= delta
@@ -167,9 +193,13 @@ func _process(delta: float) -> void:
 	level_up_label.visible = _level_notice_timer > 0.0
 	_update_contact_damage()
 
-	if _spawn_timer <= 0.0 and enemies.size() < max_enemies:
+	if elapsed_time >= match_duration:
+		_on_match_won()
+		return
+
+	if _spawn_timer <= 0.0 and enemies.size() < _current_max_enemies:
 		_spawn_enemy()
-		_spawn_timer = spawn_interval
+		_spawn_timer = _current_spawn_interval
 
 	if _attack_timer <= 0.0:
 		_fire_player_projectile()
@@ -177,6 +207,40 @@ func _process(delta: float) -> void:
 
 	_update_hud()
 	queue_redraw()
+
+
+func _start_run() -> void:
+	if _game_started:
+		return
+
+	_game_started = true
+	start_panel.visible = false
+	stats_label.visible = true
+	player.set_control_enabled(true)
+	get_tree().paused = false
+	hint_label.text = "WASD/setas movem. Ataque automatico. R reinicia. F3 debug."
+
+	# A partida nasce com uma pequena horda inimiga para o loop aparecer imediatamente.
+	for index in range(initial_enemy_count):
+		_spawn_enemy(index * TAU / initial_enemy_count, SLIME_SCENE)
+
+	_update_hud()
+
+
+func _process_debug_toggle() -> void:
+	var debug_key_is_down: bool = Input.is_key_pressed(KEY_F3)
+	if debug_key_is_down and not _debug_toggle_was_down:
+		show_debug_info = not show_debug_info
+		_update_hud()
+
+	_debug_toggle_was_down = debug_key_is_down
+
+
+func _update_match_progression() -> void:
+	# Progressao linear inicial: quanto mais perto dos 5 minutos, maior a pressao.
+	_difficulty_progress = clampf(elapsed_time / match_duration, 0.0, 1.0)
+	_current_spawn_interval = lerpf(spawn_interval, spawn_interval_at_end, _difficulty_progress)
+	_current_max_enemies = int(roundf(lerpf(float(max_enemies), float(max_enemies_at_end), _difficulty_progress)))
 
 
 func get_nearest_enemy(origin: Vector2, max_distance: float) -> Enemy:
@@ -496,7 +560,7 @@ func _on_player_died() -> void:
 	get_tree().paused = true
 	game_lost.emit()
 	hint_label.text = "Aperte R para tentar de novo"
-	_show_game_over_panel()
+	_show_end_panel("Derrota")
 	_update_hud()
 
 
@@ -517,8 +581,23 @@ func _clear_hostile_nodes_after_defeat() -> void:
 	active_xp_orbs.clear()
 
 
-func _show_game_over_panel() -> void:
+func _on_match_won() -> void:
+	if _game_is_over:
+		return
+
+	_game_is_over = true
+	player.set_control_enabled(false)
+	_clear_hostile_nodes_after_defeat()
+	get_tree().paused = true
+	game_won.emit()
+	hint_label.text = "Partida vencida. Aperte R para jogar de novo."
+	_show_end_panel("Vitoria")
+	_update_hud()
+
+
+func _show_end_panel(result_title: String) -> void:
 	# O painel resume a partida usando os mesmos contadores mostrados no HUD/debug.
+	game_over_title_label.text = result_title
 	game_over_stats_label.text = "Tempo sobrevivido: %s\nNivel alcancado: %d\nInimigos derrotados: %d\nAliados convertidos: %d\nAliados no fim: %d/%d" % [
 		_format_elapsed_time(),
 		player_level,
@@ -544,13 +623,17 @@ func _on_player_health_changed(_current_health: int, _max_health: int) -> void:
 
 
 func _update_hud() -> void:
-	stats_label.text = "Vida: %d/%d\nNivel: %d\nXP: %d/%d\nTempo: %s\nInimigos: %d\nAliados: %d/%d\nConvertidos: %d" % [
+	stats_label.text = "Vida: %d/%d\nNivel: %d\nXP: %d/%d\nTempo: %s\nMeta: %s\nPressao: %.0f%%\nVivos: %d/%d\nDerrotados: %d\nAliados: %d/%d\nConvertidos: %d" % [
 		player.current_health,
 		player.max_health,
 		player_level,
 		current_xp,
 		xp_to_next_level,
 		_format_elapsed_time(),
+		_format_remaining_time(),
+		_difficulty_progress * 100.0,
+		enemies.size(),
+		_current_max_enemies,
 		enemies_defeated,
 		allies.size(),
 		ally_limit,
@@ -568,10 +651,13 @@ func _update_debug_info() -> void:
 	var bat_count: int = _count_enemies_by_type("bat")
 	var slime_ally_count: int = _count_allies_by_type("slime")
 	var bat_ally_count: int = _count_allies_by_type("bat")
-	debug_label.text = "DEBUG\nEstado: %s\nInimigos vivos: %d/%d\nSlimes: %d | Bats: %d\nAliados slime: %d | bat: %d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	debug_label.text = "DEBUG\nEstado: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nSlimes: %d | Bats: %d\nAliados slime: %d | bat: %d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
 		_get_debug_state_name(),
+		_difficulty_progress * 100.0,
+		_current_spawn_interval,
+		_current_max_enemies,
 		enemies.size(),
-		max_enemies,
+		_current_max_enemies,
 		slime_count,
 		bat_count,
 		slime_ally_count,
@@ -612,14 +698,25 @@ func _get_feedback_offset() -> Vector2:
 
 
 func _format_elapsed_time() -> String:
-	var seconds: int = int(elapsed_time) % 60
-	var minutes: int = int(elapsed_time / 60.0)
+	return _format_seconds(elapsed_time)
+
+
+func _format_remaining_time() -> String:
+	var remaining_time: float = maxf(match_duration - elapsed_time, 0.0)
+	return _format_seconds(remaining_time)
+
+
+func _format_seconds(total_seconds: float) -> String:
+	var seconds: int = int(total_seconds) % 60
+	var minutes: int = int(total_seconds / 60.0)
 	return "%02d:%02d" % [minutes, seconds]
 
 
 func _get_debug_state_name() -> String:
 	if _game_is_over:
 		return "derrota"
+	if not _game_started:
+		return "inicio"
 	if _is_choosing_upgrade:
 		return "upgrade"
 

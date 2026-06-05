@@ -58,6 +58,51 @@ theme_override_font_sizes/font_size = 16
 text = "WASD/setas movem. Ataque automatico. R reinicia."
 horizontal_alignment = 1
 
+[node name="StartPanel" type="PanelContainer" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -170.0
+offset_right = 300.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="HUD/StartPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="HUD/StartPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="HUD/StartPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 1, 0.82, 1)
+theme_override_font_sizes/font_size = 38
+text = "Horda Reversa"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="HUD/StartPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "Sobreviva por 5 minutos. Derrote inimigos e converta parte deles em aliados."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="StartButton" type="Button" parent="HUD/StartPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Comecar partida"
+
 [node name="GameOverPanel" type="PanelContainer" parent="HUD"]
 visible = false
 anchors_preset = 8

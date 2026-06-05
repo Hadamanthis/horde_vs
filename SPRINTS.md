@@ -20,6 +20,9 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 - Aliados orbitam o jogador e atacam inimigos proximos.
 - HUD de debug mostra valores reais usados pelo codigo.
 - Dano de contato e aplicado por tick centralizado no `Game`.
+- Partida tem meta temporaria de 5 minutos.
+- Tela inicial permite comecar a partida de forma clara.
+- HUD debug pode ser alternado com F3.
 
 ### Estrutura atual importante
 
@@ -34,7 +37,7 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 
 ### Proxima prioridade
 
-Sprint 7: progressao de partida curta rumo ao MVP de 5 minutos.
+Sprint 9: balanceamento do MVP e preparacao para testes externos.
 
 ## Sprint 1 - Prototipo jogavel
 
@@ -254,37 +257,85 @@ Status: concluida em 2026-06-05.
 
 Objetivo: caminhar para uma partida MVP de 5 minutos.
 
-Status: planejada.
+Status: concluida em 2026-06-05.
 
-### Entregas propostas
+### Entregue
 
 - Controlar progressao por tempo.
 - Ajustar spawn rate ao longo da partida.
-- Ajustar limite de inimigos vivos.
+- Ajustar limite de inimigos vivos ao longo da partida.
 - Definir meta inicial de duracao: 5 minutos.
-- Preparar condicao simples de vitoria temporaria, se necessario.
+- Preparar condicao simples de vitoria temporaria aos 5 minutos.
+- HUD mostra tempo decorrido, tempo ate a meta e pressao da partida.
+- Debug mostra pressao, intervalo de spawn atual e limite atual de inimigos.
+
+### Decisoes
+
+- A progressao inicial e linear para ser facil de entender e ajustar.
+- `spawn_interval` e `max_enemies` representam o comeco da partida.
+- `spawn_interval_at_end` e `max_enemies_at_end` representam a pressao aos 5 minutos.
+- A vitoria de 5 minutos e temporaria para validar duracao antes de criar objetivos finais maiores.
 
 ### Validacao
 
 - Partida dura alguns minutos sem quebrar.
 - Pressao aumenta com o tempo.
 - Debug permite acompanhar spawn e contagens.
+- Ao chegar em 5 minutos, gameplay para e aparece tela de vitoria.
 
 ## Sprint 8 - Terceiro inimigo ou tela inicial
 
 Objetivo: escolher o proximo ganho de produto depois do loop estar mais estavel.
 
+Status: concluida em 2026-06-05.
+
+### Escolha
+
+Foi escolhida uma mistura pequena das opcoes B e C, porque ajuda mais outra pessoa a testar sem explicacao direta.
+
+### Entregue
+
+- Tela inicial com nome do jogo.
+- Botao para comecar partida.
+- Partida nao spawna inimigos antes do jogador iniciar.
+- Jogador nao se move antes do inicio.
+- HUD normal ficou focado em vida, nivel, XP, tempo, meta, pressao e contagens principais.
+- HUD debug pode ser alternado com F3.
+- Hint mostra comandos principais durante a partida.
+
+### Decisoes
+
+- Ainda nao adicionamos terceiro inimigo porque o proximo gargalo e validar fluxo de partida completo.
+- A tela inicial foi feita dentro de `Game.tscn` para manter o MVP simples.
+- O debug continua no prototipo, mas deixa de competir tanto com a experiencia normal.
+
+### Validacao
+
+- Abrir a cena mostra tela inicial.
+- Clicar em `Comecar partida` inicia spawn e libera movimento.
+- F3 mostra/oculta debug.
+- R reinicia a cena.
+
+## Sprint 9 - Balanceamento e preparacao para teste externo
+
+Objetivo: ajustar a partida para alguem jogar sem acompanhamento direto.
+
 Status: planejada.
 
-### Opcoes
+### Entregas propostas
 
-- Opcao A: terceiro inimigo simples.
-- Opcao B: tela inicial com jogar e sair.
-- Opcao C: melhorar HUD normal e separar HUD debug.
+- Rodada de balanceamento de dano, vida, XP e spawn.
+- Ajustar chance de conversao para a horda crescer em ritmo interessante.
+- Revisar textos do HUD e telas.
+- Garantir que a partida de 5 minutos tenha inicio, meio e fim perceptiveis.
+- Preparar uma checklist curta de teste para outra pessoa.
 
-### Criterio de escolha
+### Validacao
 
-Escolher a opcao que mais ajudar a validar o jogo com outra pessoa jogando sem explicacao direta.
+- Um jogador novo entende como comecar.
+- A partida nao fica vazia no inicio.
+- A partida nao vira caos ilegivel cedo demais.
+- E possivel vencer ou perder em torno da meta de 5 minutos.
 
 ## Backlog fora do MVP atual
 
@@ -314,6 +365,6 @@ Nao implementar antes do loop base estar divertido:
 - [x] Level up.
 - [x] Pelo menos 8 upgrades.
 - [x] HUD funcional.
-- [ ] Tela de derrota completa.
+- [x] Tela de derrota completa.
 - [x] Reinicio rapido.
 - [ ] Partida de pelo menos 5 minutos balanceada.
