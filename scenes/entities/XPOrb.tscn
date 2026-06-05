@@ -4,3 +4,17 @@
 
 [node name="XPOrb" type="Node2D"]
 script = ExtResource("1_xp_orb")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Shadow" type="Polygon2D" parent="Visual"]
+color = Color(0.01, 0.04, 0.045, 0.9)
+polygon = PackedVector2Array(0, -16, 13, 0, 0, 16, -13, 0)
+
+[node name="Glow" type="Polygon2D" parent="Visual"]
+color = Color(0.15, 0.95, 1, 0.42)
+polygon = PackedVector2Array(0, -13, 11, 0, 0, 13, -11, 0)
+
+[node name="Crystal" type="Polygon2D" parent="Visual"]
+color = Color(0.78, 1, 0.25, 1)
+polygon = PackedVector2Array(0, -8, 6, 0, 0, 8, -6, 0)

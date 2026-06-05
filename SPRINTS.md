@@ -64,6 +64,9 @@ Status: em andamento.
 - Fundo da partida agora considera o zoom da camera para evitar a sensacao de "janela" cinza movel.
 - Level up agora pausa a partida e oferece 3 upgrades.
 - Implementados 8 upgrades basicos: dano do orbe, velocidade de ataque, velocidade do jogador, chance de conversao, limite de aliados, dano dos aliados, vida maxima e alcance de coleta.
+- Gameplay foi agrupado em `World`, permitindo pausar inimigos, aliados, projetis e XP juntos durante a escolha de upgrade.
+- Spawn de inimigos agora acontece fora da area visivel da camera com margem segura.
+- `Player.tscn` e `XPOrb.tscn` passaram a ter nos `Visual` editaveis no editor, reduzindo uso de desenho escondido em script.
 
 ### Proximas entregas
 

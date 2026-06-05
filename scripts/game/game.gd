@@ -18,13 +18,15 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 @export var spawn_interval: float = 1.15
 @export var initial_enemy_count: int = 10
 @export var xp_per_slime: int = 1
+@export var spawn_safe_margin: float = 160.0
 
 # Referencias tipadas para os nos da cena principal.
-@onready var player: Player = $Player as Player
-@onready var player_camera: Camera2D = $Player/Camera2D as Camera2D
-@onready var entities: Node2D = $Entities as Node2D
-@onready var projectiles: Node2D = $Projectiles as Node2D
-@onready var xp_orbs: Node2D = $XPOrbs as Node2D
+@onready var world: Node2D = $World as Node2D
+@onready var player: Player = $World/Player as Player
+@onready var player_camera: Camera2D = $World/Player/Camera2D as Camera2D
+@onready var entities: Node2D = $World/Entities as Node2D
+@onready var projectiles: Node2D = $World/Projectiles as Node2D
+@onready var xp_orbs: Node2D = $World/XPOrbs as Node2D
 @onready var stats_label: Label = $HUD/Stats as Label
 @onready var hint_label: Label = $HUD/Hint as Label
 @onready var game_over_label: Label = $HUD/GameOver as Label
@@ -101,6 +103,7 @@ var _game_is_over: bool = false
 func _ready() -> void:
 	randomize()
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	world.process_mode = Node.PROCESS_MODE_PAUSABLE
 	upgrade_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	upgrade_panel.visible = false
 	upgrade_buttons.append(upgrade_button_1)
@@ -126,6 +129,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_R):
+		get_tree().paused = false
 		get_tree().reload_current_scene()
 
 	if _is_choosing_upgrade:
@@ -173,17 +177,33 @@ func get_nearest_enemy(origin: Vector2, max_distance: float) -> Enemy:
 
 func _spawn_enemy(forced_angle: float = -1.0) -> void:
 	var enemy: Enemy = ENEMY_SCENE.instantiate() as Enemy
-	var angle: float = forced_angle
-	if angle < 0.0:
-		angle = randf() * TAU
-
-	# Spawn fora da area imediata do jogador para dar tempo de reagir.
-	var distance: float = randf_range(360.0, 540.0)
-	enemy.global_position = player.global_position + Vector2.RIGHT.rotated(angle) * distance
+	enemy.global_position = _get_spawn_position_outside_camera(forced_angle)
 	enemy.setup(player)
 	enemy.died.connect(_on_enemy_died)
 	entities.add_child(enemy)
 	enemies.append(enemy)
+
+
+func _get_spawn_position_outside_camera(forced_angle: float = -1.0) -> Vector2:
+	# Inimigos nascem alem do retangulo visivel para o jogador nao ver o pop-in.
+	var visible_rect: Rect2 = _get_camera_world_rect()
+	var center: Vector2 = visible_rect.get_center()
+	var half_size: Vector2 = visible_rect.size * 0.5
+	var angle: float = forced_angle
+	if angle < 0.0:
+		angle = randf() * TAU
+
+	var direction: Vector2 = Vector2.RIGHT.rotated(angle)
+	var x_distance: float = 1000000.0
+	var y_distance: float = 1000000.0
+	if absf(direction.x) > 0.001:
+		x_distance = half_size.x / absf(direction.x)
+	if absf(direction.y) > 0.001:
+		y_distance = half_size.y / absf(direction.y)
+
+	var edge_distance: float = minf(x_distance, y_distance)
+	var extra_distance: float = spawn_safe_margin + randf_range(0.0, 96.0)
+	return center + direction * (edge_distance + extra_distance)
 
 
 func _fire_player_projectile() -> void:
@@ -423,20 +443,10 @@ func _update_hud() -> void:
 
 func _draw() -> void:
 	# O fundo acompanha a camera e considera o zoom; assim nao sobra borda cinza na tela.
-	var viewport_rect: Rect2 = get_viewport_rect()
-	var camera_center: Vector2 = Vector2.ZERO
-	var visible_size: Vector2 = viewport_rect.size
-	if is_instance_valid(player_camera):
-		camera_center = player_camera.get_screen_center_position()
-		visible_size = Vector2(
-			viewport_rect.size.x / player_camera.zoom.x,
-			viewport_rect.size.y / player_camera.zoom.y
-		)
-	elif is_instance_valid(player):
-		camera_center = player.global_position
-
-	visible_size += Vector2(256.0, 256.0)
-	var top_left: Vector2 = camera_center - visible_size * 0.5
+	var visible_rect: Rect2 = _get_camera_world_rect()
+	var padding: Vector2 = Vector2(256.0, 256.0)
+	var top_left: Vector2 = visible_rect.position - padding * 0.5
+	var visible_size: Vector2 = visible_rect.size + padding
 
 	draw_rect(Rect2(top_left, visible_size), Color(0.055, 0.065, 0.07), true)
 
@@ -456,3 +466,19 @@ func _draw() -> void:
 	while y <= end_y:
 		draw_line(Vector2(top_left.x, y), Vector2(end_x, y), grid_color, 1.0)
 		y += grid_size
+
+
+func _get_camera_world_rect() -> Rect2:
+	var viewport_rect: Rect2 = get_viewport_rect()
+	var camera_center: Vector2 = Vector2.ZERO
+	var visible_size: Vector2 = viewport_rect.size
+	if is_instance_valid(player_camera):
+		camera_center = player_camera.get_screen_center_position()
+		visible_size = Vector2(
+			viewport_rect.size.x / player_camera.zoom.x,
+			viewport_rect.size.y / player_camera.zoom.y
+		)
+	elif is_instance_valid(player):
+		camera_center = player.global_position
+
+	return Rect2(camera_center - visible_size * 0.5, visible_size)

@@ -8,6 +8,8 @@ signal collected(orb: Node2D, amount: int)
 @export var magnet_radius: float = 96.0
 @export var magnet_speed: float = 220.0
 
+@onready var visual: Node2D = $Visual as Node2D
+
 var player: Node2D
 var _pulse_time: float = 0.0
 
@@ -35,30 +37,6 @@ func _process(delta: float) -> void:
 		var direction: Vector2 = (player.global_position - global_position).normalized()
 		global_position += direction * magnet_speed * delta
 
-	queue_redraw()
-
-
-func _draw() -> void:
-	# Cristal alto contraste: brilho ciano + nucleo amarelo para aparecer no chao escuro.
+	# O pulso fica no no Visual; o desenho em si aparece na cena como Polygon2D.
 	var pulse: float = 1.0 + sin(_pulse_time * 8.0) * 0.12
-	var radius: float = 8.0 * pulse
-	var points: PackedVector2Array = PackedVector2Array([
-		Vector2(0.0, -radius),
-		Vector2(radius * 0.8, 0.0),
-		Vector2(0.0, radius),
-		Vector2(-radius * 0.8, 0.0),
-	])
-	var outline: PackedVector2Array = points
-	outline.append(points[0])
-
-	var fill_colors: PackedColorArray = PackedColorArray([
-		Color(0.75, 1.0, 0.35),
-		Color(0.75, 1.0, 0.35),
-		Color(0.75, 1.0, 0.35),
-		Color(0.75, 1.0, 0.35),
-	])
-
-	draw_circle(Vector2.ZERO, radius + 5.0, Color(0.02, 0.07, 0.08, 0.82))
-	draw_circle(Vector2.ZERO, radius + 2.0, Color(0.14, 0.95, 1.0, 0.38))
-	draw_polygon(points, fill_colors)
-	draw_polyline(outline, Color(0.03, 0.08, 0.04), 2.0)
+	visual.scale = Vector2.ONE * pulse

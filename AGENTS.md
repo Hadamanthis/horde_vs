@@ -45,6 +45,8 @@ A ideia central do jogo é: inimigos derrotados podem ser convertidos em aliados
 - Ao criar uma cena/script novo com `class_name`, não depender imediatamente desse nome global em outro script se isso puder quebrar o parser do Godot. Na fronteira entre cenas novas, preferir tipo de engine (`Node2D`, `Area2D`, `CharacterBody2D`) mais contrato claro por método/sinal, ou validar antes que o `class_name` já é reconhecido.
 - Não criar arquivos `.gd.uid` manualmente. Eles devem ser gerados pelo Godot; se aparecerem após abrir o editor, revisar e versionar junto com o script correspondente.
 - Antes de entregar, procurar referências quebradas após mover arquivos (`res://scripts/...`, `res://scenes/...`) e duplicatas/acidentes de `class_name` ou scripts criados no lugar errado.
+- Preferir cenas visualmente inspecionáveis no editor: entidades devem ter nós filhos claros como `Visual`, `CollisionShape2D`, `Hitbox`/`Hurtbox` quando existirem, em vez de esconder todo o visual em `_draw()`.
+- Para pausar gameplay, agrupar elementos jogáveis sob um nó `World` pausável e deixar HUD/controladores fora dele. Evitar pausar ou travar entidades individualmente quando a pausa representa estado global do jogo.
 
 ## Modo de colaboração
 

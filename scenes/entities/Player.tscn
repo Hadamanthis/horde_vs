@@ -10,6 +10,21 @@ collision_layer = 0
 collision_mask = 0
 script = ExtResource("1_player")
 
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+color = Color(0.06, 0.12, 0.18, 1)
+polygon = PackedVector2Array(0, -15, 10, -10, 15, 0, 10, 10, 0, 15, -10, 10, -15, 0, -10, -10)
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.24, 0.78, 1, 1)
+polygon = PackedVector2Array(0, -11, 8, -8, 11, 0, 8, 8, 0, 11, -8, 8, -11, 0, -8, -8)
+
+[node name="Eye" type="Polygon2D" parent="Visual"]
+color = Color(0.02, 0.04, 0.06, 1)
+position = Vector2(4, -3)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_player")
 
