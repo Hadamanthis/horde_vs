@@ -2,34 +2,45 @@ extends Node2D
 
 signal enemy_died(enemy_type: String, death_position: Vector2)
 signal enemy_converted(enemy_type: String, conversion_position: Vector2)
+signal xp_collected(amount: int)
+signal level_up(new_level: int)
 signal game_lost
 
-const ENEMY_SCENE := preload("res://scenes/Enemy.tscn")
-const ALLY_SCENE := preload("res://scenes/Ally.tscn")
-const PROJECTILE_SCENE := preload("res://scenes/Projectile.tscn")
+const ENEMY_SCENE: PackedScene = preload("res://scenes/Enemy.tscn")
+const ALLY_SCENE: PackedScene = preload("res://scenes/Ally.tscn")
+const PROJECTILE_SCENE: PackedScene = preload("res://scenes/Projectile.tscn")
+const XP_ORB_SCENE: PackedScene = preload("res://scenes/XPOrb.tscn")
 
 @export var conversion_chance: float = 0.2
 @export var ally_limit: int = 5
 @export var max_enemies: int = 42
 @export var spawn_interval: float = 1.15
 @export var initial_enemy_count: int = 10
+@export var xp_per_slime: int = 1
 
 # Referencias tipadas para os nos da cena principal.
 @onready var player: Player = $Player as Player
 @onready var entities: Node2D = $Entities as Node2D
 @onready var projectiles: Node2D = $Projectiles as Node2D
+@onready var xp_orbs: Node2D = $XPOrbs as Node2D
 @onready var stats_label: Label = $HUD/Stats as Label
 @onready var hint_label: Label = $HUD/Hint as Label
 @onready var game_over_label: Label = $HUD/GameOver as Label
+@onready var level_up_label: Label = $HUD/LevelUpNotice as Label
 
 var enemies: Array[Enemy] = []
 var allies: Array[Ally] = []
+var active_xp_orbs: Array[XPOrb] = []
 
 var enemies_defeated: int = 0
 var allies_converted: int = 0
+var player_level: int = 1
+var current_xp: int = 0
+var xp_to_next_level: int = 5
 var elapsed_time: float = 0.0
 var _spawn_timer: float = 0.0
 var _attack_timer: float = 0.0
+var _level_notice_timer: float = 0.0
 var _game_is_over: bool = false
 
 
@@ -59,6 +70,8 @@ func _process(delta: float) -> void:
 	elapsed_time += delta
 	_spawn_timer -= delta
 	_attack_timer -= delta
+	_level_notice_timer = max(_level_notice_timer - delta, 0.0)
+	level_up_label.visible = _level_notice_timer > 0.0
 
 	if _spawn_timer <= 0.0 and enemies.size() < max_enemies:
 		_spawn_enemy()
@@ -115,6 +128,16 @@ func _fire_player_projectile() -> void:
 	projectiles.add_child(projectile)
 
 
+func _spawn_xp_orb(spawn_position: Vector2, amount: int) -> void:
+	# XP tambem nasce no ponto da morte para reforcar a recompensa do combate.
+	var orb: XPOrb = XP_ORB_SCENE.instantiate() as XPOrb
+	orb.global_position = spawn_position
+	orb.setup(player, amount)
+	orb.collected.connect(_on_xp_orb_collected)
+	xp_orbs.add_child(orb)
+	active_xp_orbs.append(orb)
+
+
 func _on_enemy_died(enemy: Enemy) -> void:
 	if _game_is_over:
 		return
@@ -123,6 +146,7 @@ func _on_enemy_died(enemy: Enemy) -> void:
 	enemies.erase(enemy)
 	enemies_defeated += 1
 	enemy_died.emit("slime", death_position)
+	_spawn_xp_orb(death_position, xp_per_slime)
 
 	# Conversao e o coracao do jogo: parte dos inimigos derrotados vira aliado.
 	if enemy.convertible and allies.size() < ally_limit and randf() <= conversion_chance:
@@ -141,6 +165,30 @@ func _convert_enemy(spawn_position: Vector2) -> void:
 	allies_converted += 1
 	enemy_converted.emit("slime", spawn_position)
 	_refresh_ally_orbits()
+
+
+func _on_xp_orb_collected(orb: XPOrb, amount: int) -> void:
+	if _game_is_over:
+		return
+
+	active_xp_orbs.erase(orb)
+	current_xp += amount
+	xp_collected.emit(amount)
+
+	# Pode subir mais de um nivel se no futuro um cristal valer bastante XP.
+	while current_xp >= xp_to_next_level:
+		current_xp -= xp_to_next_level
+		_gain_level()
+
+	_update_hud()
+
+
+func _gain_level() -> void:
+	player_level += 1
+	xp_to_next_level = int(ceil(float(xp_to_next_level) * 1.35 + 3.0))
+	level_up_label.text = "Nivel %d" % player_level
+	_level_notice_timer = 1.4
+	level_up.emit(player_level)
 
 
 func _refresh_ally_orbits() -> void:
@@ -172,6 +220,11 @@ func _clear_hostile_nodes_after_defeat() -> void:
 	for projectile in active_projectiles:
 		projectile.queue_free()
 
+	for orb in active_xp_orbs:
+		if is_instance_valid(orb):
+			orb.queue_free()
+	active_xp_orbs.clear()
+
 
 func _on_player_health_changed(_current_health: int, _max_health: int) -> void:
 	_update_hud()
@@ -180,9 +233,12 @@ func _on_player_health_changed(_current_health: int, _max_health: int) -> void:
 func _update_hud() -> void:
 	var seconds: int = int(elapsed_time) % 60
 	var minutes: int = int(elapsed_time / 60.0)
-	stats_label.text = "Vida: %d/%d\nTempo: %02d:%02d\nInimigos: %d\nAliados: %d/%d\nConvertidos: %d" % [
+	stats_label.text = "Vida: %d/%d\nNivel: %d\nXP: %d/%d\nTempo: %02d:%02d\nInimigos: %d\nAliados: %d/%d\nConvertidos: %d" % [
 		player.current_health,
 		player.max_health,
+		player_level,
+		current_xp,
+		xp_to_next_level,
 		minutes,
 		seconds,
 		enemies_defeated,

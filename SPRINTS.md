@@ -42,19 +42,28 @@ Status: concluida em 2026-06-05.
 - A primeira formacao de aliados usa orbita, como recomendado no GDD.
 - Existe apenas um tipo de inimigo por enquanto: slime.
 - Ainda nao foram implementados XP, level up, upgrades ou menus, pois pertencem a Sprint 2.
+- Aliados ja causam dano em inimigos proximos, mas ainda precisam de feedback visual de ataque para o jogador perceber melhor.
 
 ## Sprint 2 - Loop completo
 
 Objetivo: transformar o prototipo em uma partida curta com progressao basica.
 
+Status: em andamento.
+
+### Entregue nesta sprint
+
+- Cristais de XP dropam quando slimes morrem.
+- Cristais sao coletados por proximidade.
+- Cristais sao atraidos quando o jogador chega perto.
+- HUD mostra nivel e progresso de XP.
+- Jogador sobe de nivel ao completar a barra.
+- Aviso simples aparece ao subir de nivel.
+
 ### Proximas entregas
 
-- Cristais de XP.
-- Coleta de XP por proximidade.
-- Level up.
 - 3 opcoes simples de upgrade.
 - Pelo menos 8 upgrades no total.
-- HUD melhorado para XP e nivel.
 - Limite de aliados ajustavel por upgrade.
 - Segundo inimigo simples.
 - Tela de derrota com estatisticas.
+- Feedback visual para ataque dos aliados.

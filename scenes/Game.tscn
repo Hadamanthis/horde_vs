@@ -12,6 +12,8 @@ script = ExtResource("1_game")
 
 [node name="Projectiles" type="Node2D" parent="."]
 
+[node name="XPOrbs" type="Node2D" parent="."]
+
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="Stats" type="Label" parent="HUD"]
@@ -53,5 +55,24 @@ grow_vertical = 2
 theme_override_colors/font_color = Color(1, 0.84, 0.74, 1)
 theme_override_font_sizes/font_size = 34
 text = "Derrota"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LevelUpNotice" type="Label" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -96.0
+offset_right = 140.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.75, 1, 0.35, 1)
+theme_override_font_sizes/font_size = 28
+text = "Nivel 2"
 horizontal_alignment = 1
 vertical_alignment = 1
