@@ -23,6 +23,7 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 - Partida tem meta temporaria de 5 minutos.
 - Tela inicial permite comecar a partida de forma clara.
 - HUD debug pode ser alternado com F3.
+- Inimigos com papeis diferentes comecam a funcionar como pecas capturaveis.
 
 ### Estrutura atual importante
 
@@ -37,7 +38,7 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 
 ### Proxima prioridade
 
-Sprint 9: balanceamento do MVP e preparacao para testes externos.
+Sprint 10: sinergias e composicao do exercito.
 
 ## Sprint 1 - Prototipo jogavel
 
@@ -316,26 +317,69 @@ Foi escolhida uma mistura pequena das opcoes B e C, porque ajuda mais outra pess
 - F3 mostra/oculta debug.
 - R reinicia a cena.
 
-## Sprint 9 - Balanceamento e preparacao para teste externo
+## Sprint 9 - Inimigos com papeis capturaveis
 
-Objetivo: ajustar a partida para alguem jogar sem acompanhamento direto.
+Objetivo: adicionar gameplay novo tratando inimigos como pecas capturaveis, nao apenas obstaculos.
 
-Status: planejada.
+Status: concluida em 2026-06-05.
 
-### Entregas propostas
+### Entregue
 
-- Rodada de balanceamento de dano, vida, XP e spawn.
-- Ajustar chance de conversao para a horda crescer em ritmo interessante.
-- Revisar textos do HUD e telas.
-- Garantir que a partida de 5 minutos tenha inicio, meio e fim perceptiveis.
-- Preparar uma checklist curta de teste para outra pessoa.
+- Novo inimigo `Boar`: avanca com investida depois de uma preparacao curta.
+- Novo aliado `BoarAlly`: atacante de investida, bom para dano explosivo em alvo unico.
+- Novo inimigo `Totem`: lento, resistente e tenta manter distancia do jogador.
+- Novo aliado `TotemAlly`: suporte ofensivo com ataque em area ao redor dele.
+- Script base de inimigos ganhou modos de movimento:
+  - `chase`;
+  - `skirmisher`;
+  - `charger`.
+- Script base de aliados ganhou modos de ataque:
+  - `melee`;
+  - `dash`;
+  - `aura`.
+- Spawn por peso passa a misturar tipos novos ao longo do tempo.
+- Conversao preserva os novos tipos e cria aliados equivalentes.
+- Debug mostra contagem de boars/totens e seus aliados.
+
+### Decisoes
+
+- Cada inimigo novo deve responder qual papel ele traz para o exercito quando convertido.
+- Continuamos usando cena concreta por tipo e script base compartilhado.
+- O comportamento e configurado por exports no Inspector para facilitar ajuste sem criar muitos scripts.
+- Polimento user friendly fica em pausa; o foco volta para variedade jogavel.
 
 ### Validacao
 
-- Um jogador novo entende como comecar.
-- A partida nao fica vazia no inicio.
-- A partida nao vira caos ilegivel cedo demais.
-- E possivel vencer ou perder em torno da meta de 5 minutos.
+- Depois de cerca de 55 segundos, javalis podem aparecer.
+- Javalis devem preparar e avancar em linha reta.
+- Depois de cerca de 105 segundos, totens podem aparecer.
+- Totens devem ser lentos, resistentes e render mais XP.
+- Converter javali cria aliado de investida.
+- Converter totem cria aliado de area.
+- F3 mostra contagens dos novos tipos.
+
+## Sprint 10 - Sinergias e composicao do exercito
+
+Objetivo: fazer o jogador se importar com quais criaturas converteu.
+
+Status: planejada.
+
+### Ideias propostas
+
+- Bônus por composicao, por exemplo:
+  - 3 slimes aumentam chance de conversao;
+  - 2 bats aumentam velocidade da horda;
+  - 2 boars aumentam dano de investida;
+  - 1 totem melhora alcance de coleta ou dano em area.
+- Limite por tipo ou custo de slots para criaturas fortes.
+- Indicador simples de composicao atual no debug antes de virar HUD definitivo.
+- Pequenas escolhas de upgrade que interagem com tipos de aliados.
+
+### Validacao
+
+- Ter aliados diferentes muda a forma como a horda luta.
+- O jogador consegue perceber valor em converter tipos especificos.
+- A composicao do exercito vira uma decisao, nao apenas uma contagem.
 
 ## Backlog fora do MVP atual
 
@@ -357,6 +401,7 @@ Nao implementar antes do loop base estar divertido:
 - [x] Personagem andando.
 - [x] Ataque automatico.
 - [x] Pelo menos 2 inimigos.
+- [x] Pelo menos 4 inimigos.
 - [x] Inimigos tomando dano e morrendo.
 - [x] Chance de conversao.
 - [x] Aliados orbitando o jogador.

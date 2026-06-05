@@ -10,8 +10,12 @@ signal game_won
 
 const SLIME_SCENE: PackedScene = preload("res://scenes/entities/enemies/Slime.tscn")
 const BAT_SCENE: PackedScene = preload("res://scenes/entities/enemies/Bat.tscn")
+const BOAR_SCENE: PackedScene = preload("res://scenes/entities/enemies/Boar.tscn")
+const TOTEM_SCENE: PackedScene = preload("res://scenes/entities/enemies/Totem.tscn")
 const SLIME_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/SlimeAlly.tscn")
 const BAT_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BatAlly.tscn")
+const BOAR_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BoarAlly.tscn")
+const TOTEM_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/TotemAlly.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
 const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingText.tscn")
@@ -25,7 +29,11 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingT
 @export var spawn_interval_at_end: float = 0.42
 @export var initial_enemy_count: int = 10
 @export var bat_start_time: float = 25.0
-@export var bat_spawn_chance: float = 0.25
+@export var bat_spawn_weight: float = 0.25
+@export var boar_start_time: float = 55.0
+@export var boar_spawn_weight: float = 0.22
+@export var totem_start_time: float = 105.0
+@export var totem_spawn_weight: float = 0.12
 @export var spawn_safe_margin: float = 160.0
 @export var contact_damage_tick_interval: float = 0.5
 @export var show_debug_info: bool = false
@@ -275,9 +283,43 @@ func _spawn_enemy(forced_angle: float = -1.0, enemy_scene: PackedScene = null) -
 
 
 func _choose_enemy_scene() -> PackedScene:
-	# A progressao ainda e simples: morcegos entram depois de alguns segundos.
-	if elapsed_time >= bat_start_time and randf() <= bat_spawn_chance:
-		return BAT_SCENE
+	# Cada tipo novo entra como uma peca capturavel com funcao propria no exercito.
+	var spawn_table: Array[Dictionary] = [
+		{
+			"scene": SLIME_SCENE,
+			"weight": 1.0,
+		},
+	]
+	if elapsed_time >= bat_start_time:
+		spawn_table.append({
+			"scene": BAT_SCENE,
+			"weight": bat_spawn_weight,
+		})
+	if elapsed_time >= boar_start_time:
+		spawn_table.append({
+			"scene": BOAR_SCENE,
+			"weight": boar_spawn_weight,
+		})
+	if elapsed_time >= totem_start_time:
+		spawn_table.append({
+			"scene": TOTEM_SCENE,
+			"weight": totem_spawn_weight,
+		})
+
+	return _pick_weighted_enemy_scene(spawn_table)
+
+
+func _pick_weighted_enemy_scene(spawn_table: Array[Dictionary]) -> PackedScene:
+	var total_weight: float = 0.0
+	for weight_entry in spawn_table:
+		total_weight += float(weight_entry["weight"])
+
+	var roll: float = randf() * total_weight
+	var accumulated_weight: float = 0.0
+	for scene_entry in spawn_table:
+		accumulated_weight += float(scene_entry["weight"])
+		if roll <= accumulated_weight:
+			return scene_entry["scene"] as PackedScene
 
 	return SLIME_SCENE
 
@@ -408,6 +450,10 @@ func _convert_enemy(enemy_type: String, spawn_position: Vector2) -> void:
 func _get_ally_scene_for_enemy_type(enemy_type: String) -> PackedScene:
 	# Cada inimigo convertido vira a cena aliada equivalente ao seu tipo.
 	match enemy_type:
+		"boar":
+			return BOAR_ALLY_SCENE
+		"totem":
+			return TOTEM_ALLY_SCENE
 		"bat":
 			return BAT_ALLY_SCENE
 		_:
@@ -649,9 +695,13 @@ func _update_debug_info() -> void:
 
 	var slime_count: int = _count_enemies_by_type("slime")
 	var bat_count: int = _count_enemies_by_type("bat")
+	var boar_count: int = _count_enemies_by_type("boar")
+	var totem_count: int = _count_enemies_by_type("totem")
 	var slime_ally_count: int = _count_allies_by_type("slime")
 	var bat_ally_count: int = _count_allies_by_type("bat")
-	debug_label.text = "DEBUG\nEstado: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nSlimes: %d | Bats: %d\nAliados slime: %d | bat: %d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	var boar_ally_count: int = _count_allies_by_type("boar")
+	var totem_ally_count: int = _count_allies_by_type("totem")
+	debug_label.text = "DEBUG\nEstado: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nSlime:%d Bat:%d Boar:%d Totem:%d\nAliados S:%d B:%d J:%d T:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
 		_get_debug_state_name(),
 		_difficulty_progress * 100.0,
 		_current_spawn_interval,
@@ -660,11 +710,17 @@ func _update_debug_info() -> void:
 		_current_max_enemies,
 		slime_count,
 		bat_count,
+		boar_count,
+		totem_count,
 		slime_ally_count,
 		bat_ally_count,
+		boar_ally_count,
+		totem_ally_count,
 		_last_spawned_enemy_type,
 		_last_converted_enemy_type,
 		maxf(bat_start_time - elapsed_time, 0.0),
+		maxf(boar_start_time - elapsed_time, 0.0),
+		maxf(totem_start_time - elapsed_time, 0.0),
 		_touching_enemy_count,
 		_last_contact_damage,
 		contact_damage_tick_interval,

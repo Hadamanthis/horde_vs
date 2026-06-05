@@ -8,6 +8,8 @@ class_name Ally
 @export var attack_range: float = 34.0
 @export var attack_interval: float = 0.45
 @export var ally_type: String = "slime"
+@export var attack_mode: String = "melee"
+@export var attack_lunge_distance: float = 0.0
 @export var attack_flash_time: float = 0.12
 
 @onready var visual: Node2D = $Visual as Node2D
@@ -57,14 +59,8 @@ func _physics_process(delta: float) -> void:
 	velocity = velocity.limit_length(move_speed)
 	move_and_slide()
 
-	# Ataque simples de contato: se um inimigo entrar no raio, o aliado causa dano.
-	var enemy: Enemy = _find_nearest_enemy()
-	if enemy and global_position.distance_to(enemy.global_position) <= attack_range and _attack_timer == 0.0:
-		enemy.take_damage(attack_damage)
-		if game.has_method("spawn_damage_feedback"):
-			game.call("spawn_damage_feedback", attack_damage, enemy.global_position, Color(0.55, 1.0, 0.82))
-		_attack_timer = attack_interval
-		_attack_flash_timer = attack_flash_time
+	if _attack_timer == 0.0:
+		_try_attack()
 
 	if _attack_flash_timer > 0.0:
 		_attack_flash_timer = maxf(_attack_flash_timer - delta, 0.0)
@@ -78,3 +74,55 @@ func _find_nearest_enemy() -> Enemy:
 		return null
 
 	return game.call("get_nearest_enemy", global_position, attack_range) as Enemy
+
+
+func _try_attack() -> void:
+	match attack_mode:
+		"aura":
+			_try_aura_attack()
+		"dash":
+			_try_single_target_attack(true)
+		_:
+			_try_single_target_attack(false)
+
+
+func _try_single_target_attack(should_lunge: bool) -> void:
+	# Ataque de alvo unico: simples, legivel e bom para aliados comuns.
+	var enemy: Enemy = _find_nearest_enemy()
+	if not enemy or global_position.distance_to(enemy.global_position) > attack_range:
+		return
+
+	enemy.take_damage(attack_damage)
+	if should_lunge and attack_lunge_distance > 0.0:
+		global_position = global_position.move_toward(enemy.global_position, attack_lunge_distance)
+	_spawn_damage_feedback(enemy.global_position)
+	_start_attack_cooldown()
+
+
+func _try_aura_attack() -> void:
+	# Aura bate em varios inimigos proximos; ideal para aliado raro de controle de grupo.
+	var hit_any_enemy: bool = false
+	var nearby_nodes: Array[Node] = get_tree().get_nodes_in_group("enemies")
+
+	for nearby_node in nearby_nodes:
+		var enemy: Enemy = nearby_node as Enemy
+		if not is_instance_valid(enemy):
+			continue
+
+		if global_position.distance_to(enemy.global_position) <= attack_range:
+			enemy.take_damage(attack_damage)
+			_spawn_damage_feedback(enemy.global_position)
+			hit_any_enemy = true
+
+	if hit_any_enemy:
+		_start_attack_cooldown()
+
+
+func _spawn_damage_feedback(world_position: Vector2) -> void:
+	if is_instance_valid(game) and game.has_method("spawn_damage_feedback"):
+		game.call("spawn_damage_feedback", attack_damage, world_position, Color(0.55, 1.0, 0.82))
+
+
+func _start_attack_cooldown() -> void:
+	_attack_timer = attack_interval
+	_attack_flash_timer = attack_flash_time
