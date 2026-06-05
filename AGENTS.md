@@ -39,6 +39,8 @@ A ideia central do jogo é: inimigos derrotados podem ser convertidos em aliados
 - Para aliados, começar com órbita ao redor do jogador por ser mais simples e legível.
 - Usar sinais para eventos importantes: morte de inimigo, conversão, coleta de XP, level up, vitória e derrota.
 - Manter cenas pequenas e específicas: jogador, inimigo, aliado, projétil, XP, HUD, gerenciadores.
+- Tipar explicitamente variáveis, retornos e referências de nós sempre que isso evitar avisos do analisador estático do Godot ou deixar a intenção mais clara.
+- Adicionar comentários didáticos nos blocos importantes de código, especialmente quando envolver ciclo de vida da engine, sinais, cenas, nós, estado de jogo ou contas de movimento. Evitar comentários que apenas repetem literalmente a linha.
 
 ## Modo de colaboração
 

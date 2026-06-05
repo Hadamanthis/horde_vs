@@ -8,12 +8,13 @@ const ENEMY_SCENE := preload("res://scenes/Enemy.tscn")
 const ALLY_SCENE := preload("res://scenes/Ally.tscn")
 const PROJECTILE_SCENE := preload("res://scenes/Projectile.tscn")
 
-@export var conversion_chance := 0.2
-@export var ally_limit := 5
-@export var max_enemies := 42
-@export var spawn_interval := 1.15
-@export var initial_enemy_count := 10
+@export var conversion_chance: float = 0.2
+@export var ally_limit: int = 5
+@export var max_enemies: int = 42
+@export var spawn_interval: float = 1.15
+@export var initial_enemy_count: int = 10
 
+# Referencias tipadas para os nos da cena principal.
 @onready var player: Player = $Player as Player
 @onready var entities: Node2D = $Entities as Node2D
 @onready var projectiles: Node2D = $Projectiles as Node2D
@@ -24,19 +25,22 @@ const PROJECTILE_SCENE := preload("res://scenes/Projectile.tscn")
 var enemies: Array[Enemy] = []
 var allies: Array[Ally] = []
 
-var enemies_defeated := 0
-var allies_converted := 0
-var elapsed_time := 0.0
-var _spawn_timer := 0.0
-var _attack_timer := 0.0
-var _game_is_over := false
+var enemies_defeated: int = 0
+var allies_converted: int = 0
+var elapsed_time: float = 0.0
+var _spawn_timer: float = 0.0
+var _attack_timer: float = 0.0
+var _game_is_over: bool = false
 
 
 func _ready() -> void:
 	randomize()
+
+	# Sinais deixam o Player avisar o Game sem conhecer a estrutura da cena inteira.
 	player.died.connect(_on_player_died)
 	player.health_changed.connect(_on_player_health_changed)
 
+	# Comecamos com slimes ao redor do jogador para testar o loop imediatamente.
 	for index in range(initial_enemy_count):
 		_spawn_enemy(index * TAU / initial_enemy_count)
 
@@ -48,6 +52,7 @@ func _process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_R):
 		get_tree().reload_current_scene()
 
+	# Depois da derrota, apenas o atalho de reinicio continua ativo.
 	if _game_is_over:
 		return
 
@@ -69,13 +74,14 @@ func _process(delta: float) -> void:
 
 func get_nearest_enemy(origin: Vector2, max_distance: float) -> Enemy:
 	var nearest_enemy: Enemy = null
-	var nearest_distance_sq := max_distance * max_distance
+	var nearest_distance_sq: float = max_distance * max_distance
 
+	# Usamos distancia ao quadrado para evitar raiz quadrada a cada inimigo.
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
 			continue
 
-		var distance_sq := origin.distance_squared_to(enemy.global_position)
+		var distance_sq: float = origin.distance_squared_to(enemy.global_position)
 		if distance_sq <= nearest_distance_sq:
 			nearest_distance_sq = distance_sq
 			nearest_enemy = enemy
@@ -83,13 +89,14 @@ func get_nearest_enemy(origin: Vector2, max_distance: float) -> Enemy:
 	return nearest_enemy
 
 
-func _spawn_enemy(forced_angle := -1.0) -> void:
+func _spawn_enemy(forced_angle: float = -1.0) -> void:
 	var enemy: Enemy = ENEMY_SCENE.instantiate() as Enemy
 	var angle: float = forced_angle
 	if angle < 0.0:
 		angle = randf() * TAU
 
-	var distance := randf_range(360.0, 540.0)
+	# Spawn fora da area imediata do jogador para dar tempo de reagir.
+	var distance: float = randf_range(360.0, 540.0)
 	enemy.global_position = player.global_position + Vector2.RIGHT.rotated(angle) * distance
 	enemy.setup(player)
 	enemy.died.connect(_on_enemy_died)
@@ -98,6 +105,7 @@ func _spawn_enemy(forced_angle := -1.0) -> void:
 
 
 func _fire_player_projectile() -> void:
+	# MVP sem mira manual: o alvo e sempre o inimigo mais proximo dentro do alcance.
 	var target: Enemy = get_nearest_enemy(player.global_position, player.attack_range)
 	if not target:
 		return
@@ -108,11 +116,15 @@ func _fire_player_projectile() -> void:
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
+	if _game_is_over:
+		return
+
 	var death_position: Vector2 = enemy.global_position
 	enemies.erase(enemy)
 	enemies_defeated += 1
 	enemy_died.emit("slime", death_position)
 
+	# Conversao e o coracao do jogo: parte dos inimigos derrotados vira aliado.
 	if enemy.convertible and allies.size() < ally_limit and randf() <= conversion_chance:
 		_convert_enemy(death_position)
 
@@ -120,6 +132,7 @@ func _on_enemy_died(enemy: Enemy) -> void:
 
 
 func _convert_enemy(spawn_position: Vector2) -> void:
+	# O aliado nasce no ponto da morte para vender visualmente a conversao.
 	var ally: Ally = ALLY_SCENE.instantiate() as Ally
 	ally.global_position = spawn_position
 	entities.add_child(ally)
@@ -131,6 +144,7 @@ func _convert_enemy(spawn_position: Vector2) -> void:
 
 
 func _refresh_ally_orbits() -> void:
+	# Quando a quantidade muda, redistribuimos todos para manter a orbita organizada.
 	for index in range(allies.size()):
 		var ally: Ally = allies[index]
 		if is_instance_valid(ally):
@@ -139,10 +153,24 @@ func _refresh_ally_orbits() -> void:
 
 func _on_player_died() -> void:
 	_game_is_over = true
+	player.set_control_enabled(false)
+	_clear_hostile_nodes_after_defeat()
 	game_lost.emit()
 	game_over_label.visible = true
 	hint_label.text = "Aperte R para tentar de novo"
 	_update_hud()
+
+
+func _clear_hostile_nodes_after_defeat() -> void:
+	# A derrota encerra a simulacao hostil; inimigos/projeteis somem e o jogador para.
+	for enemy in enemies:
+		if is_instance_valid(enemy):
+			enemy.queue_free()
+	enemies.clear()
+
+	var active_projectiles: Array[Node] = projectiles.get_children()
+	for projectile in active_projectiles:
+		projectile.queue_free()
 
 
 func _on_player_health_changed(_current_health: int, _max_health: int) -> void:
@@ -150,8 +178,8 @@ func _on_player_health_changed(_current_health: int, _max_health: int) -> void:
 
 
 func _update_hud() -> void:
-	var seconds := int(elapsed_time) % 60
-	var minutes := int(elapsed_time / 60.0)
+	var seconds: int = int(elapsed_time) % 60
+	var minutes: int = int(elapsed_time / 60.0)
 	stats_label.text = "Vida: %d/%d\nTempo: %02d:%02d\nInimigos: %d\nAliados: %d/%d\nConvertidos: %d" % [
 		player.current_health,
 		player.max_health,
@@ -165,6 +193,7 @@ func _update_hud() -> void:
 
 
 func _draw() -> void:
+	# O fundo e desenhado por codigo para termos um mapa legivel antes da arte final.
 	var viewport_rect: Rect2 = get_viewport_rect()
 	var camera_center: Vector2 = Vector2.ZERO
 	if is_instance_valid(player):

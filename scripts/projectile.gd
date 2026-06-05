@@ -1,16 +1,17 @@
 extends Node2D
 class_name Projectile
 
-@export var speed := 430.0
-@export var hit_radius := 12.0
-@export var lifetime := 1.3
+@export var speed: float = 430.0
+@export var hit_radius: float = 12.0
+@export var lifetime: float = 1.3
 
-var direction := Vector2.RIGHT
-var damage := 8
+var direction: Vector2 = Vector2.RIGHT
+var damage: int = 8
 var game: Node
 
 
 func setup(start_position: Vector2, target_position: Vector2, amount: int, game_node: Node) -> void:
+	# O projetil nasce ja sabendo ponto inicial, alvo inicial, dano e quem consulta inimigos.
 	global_position = start_position
 	direction = (target_position - start_position).normalized()
 	damage = amount
@@ -18,10 +19,11 @@ func setup(start_position: Vector2, target_position: Vector2, amount: int, game_
 
 
 func _process(delta: float) -> void:
+	# Projetil usa _process porque nao depende de colisao fisica, so avanca por tempo.
 	global_position += direction * speed * delta
 	lifetime -= delta
 
-	var enemy := _find_hit_enemy()
+	var enemy: Enemy = _find_hit_enemy()
 	if enemy:
 		enemy.take_damage(damage)
 		queue_free()
@@ -31,11 +33,11 @@ func _process(delta: float) -> void:
 		queue_free()
 
 
-func _find_hit_enemy() -> Node2D:
+func _find_hit_enemy() -> Enemy:
 	if not is_instance_valid(game) or not game.has_method("get_nearest_enemy"):
 		return null
 
-	return game.get_nearest_enemy(global_position, hit_radius)
+	return game.call("get_nearest_enemy", global_position, hit_radius) as Enemy
 
 
 func _draw() -> void:

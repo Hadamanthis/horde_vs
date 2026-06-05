@@ -4,14 +4,15 @@ class_name Player
 signal died
 signal health_changed(current_health: int, max_health: int)
 
-@export var max_health := 100
-@export var speed := 160.0
-@export var projectile_damage := 8
-@export var attack_interval := 1.0
-@export var attack_range := 420.0
+@export var max_health: int = 100
+@export var speed: float = 160.0
+@export var projectile_damage: int = 8
+@export var attack_interval: float = 1.0
+@export var attack_range: float = 420.0
 
-var current_health := max_health
-var _hit_flash_time := 0.0
+var current_health: int = max_health
+var can_move: bool = true
+var _hit_flash_time: float = 0.0
 
 
 func _ready() -> void:
@@ -20,7 +21,11 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var direction := _read_move_input()
+	# _physics_process roda em passo fixo, ideal para movimento de CharacterBody2D.
+	var direction: Vector2 = Vector2.ZERO
+	if can_move:
+		direction = _read_move_input()
+
 	velocity = direction * speed
 	move_and_slide()
 
@@ -42,8 +47,15 @@ func take_damage(amount: int) -> void:
 		died.emit()
 
 
+func set_control_enabled(is_enabled: bool) -> void:
+	# O Game chama isso na derrota para separar "personagem existe" de "jogador controla".
+	can_move = is_enabled
+	if not can_move:
+		velocity = Vector2.ZERO
+
+
 func _read_move_input() -> Vector2:
-	var direction := Vector2.ZERO
+	var direction: Vector2 = Vector2.ZERO
 
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
 		direction.x -= 1.0
@@ -58,7 +70,8 @@ func _read_move_input() -> Vector2:
 
 
 func _draw() -> void:
-	var body_color := Color(0.24, 0.78, 1.0)
+	# Enquanto nao temos sprites, _draw cria uma silhueta simples e legivel.
+	var body_color: Color = Color(0.24, 0.78, 1.0)
 	if _hit_flash_time > 0.0:
 		body_color = Color(1.0, 1.0, 1.0)
 
