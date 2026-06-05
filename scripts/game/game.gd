@@ -6,10 +6,10 @@ signal xp_collected(amount: int)
 signal level_up(new_level: int)
 signal game_lost
 
-const ENEMY_SCENE: PackedScene = preload("res://scenes/Enemy.tscn")
-const ALLY_SCENE: PackedScene = preload("res://scenes/Ally.tscn")
-const PROJECTILE_SCENE: PackedScene = preload("res://scenes/Projectile.tscn")
-const XP_ORB_SCENE: PackedScene = preload("res://scenes/XPOrb.tscn")
+const ENEMY_SCENE: PackedScene = preload("res://scenes/entities/Enemy.tscn")
+const ALLY_SCENE: PackedScene = preload("res://scenes/entities/Ally.tscn")
+const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
+const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 
 @export var conversion_chance: float = 0.2
 @export var ally_limit: int = 5
@@ -30,7 +30,7 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/XPOrb.tscn")
 
 var enemies: Array[Enemy] = []
 var allies: Array[Ally] = []
-var active_xp_orbs: Array[XPOrb] = []
+var active_xp_orbs: Array[Node2D] = []
 
 var enemies_defeated: int = 0
 var allies_converted: int = 0
@@ -130,10 +130,10 @@ func _fire_player_projectile() -> void:
 
 func _spawn_xp_orb(spawn_position: Vector2, amount: int) -> void:
 	# XP tambem nasce no ponto da morte para reforcar a recompensa do combate.
-	var orb: XPOrb = XP_ORB_SCENE.instantiate() as XPOrb
+	var orb: Node2D = XP_ORB_SCENE.instantiate() as Node2D
 	orb.global_position = spawn_position
-	orb.setup(player, amount)
-	orb.collected.connect(_on_xp_orb_collected)
+	orb.call("setup", player, amount)
+	orb.connect("collected", Callable(self, "_on_xp_orb_collected"))
 	xp_orbs.add_child(orb)
 	active_xp_orbs.append(orb)
 
@@ -167,7 +167,7 @@ func _convert_enemy(spawn_position: Vector2) -> void:
 	_refresh_ally_orbits()
 
 
-func _on_xp_orb_collected(orb: XPOrb, amount: int) -> void:
+func _on_xp_orb_collected(orb: Node2D, amount: int) -> void:
 	if _game_is_over:
 		return
 

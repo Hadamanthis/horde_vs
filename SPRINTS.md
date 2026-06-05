@@ -58,6 +58,8 @@ Status: em andamento.
 - HUD mostra nivel e progresso de XP.
 - Jogador sobe de nivel ao completar a barra.
 - Aviso simples aparece ao subir de nivel.
+- Estrutura de arquivos reorganizada: entidades em `scenes/entities/` e `scripts/entities/`, jogo/gerenciadores em `scripts/game/`.
+- Corrigida dependencia fragil do tipo global `XPOrb` em `game.gd`; o jogo agora conversa com a cena de XP por contrato de metodo/sinal.
 
 ### Proximas entregas
 

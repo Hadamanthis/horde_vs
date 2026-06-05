@@ -41,6 +41,10 @@ A ideia central do jogo é: inimigos derrotados podem ser convertidos em aliados
 - Manter cenas pequenas e específicas: jogador, inimigo, aliado, projétil, XP, HUD, gerenciadores.
 - Tipar explicitamente variáveis, retornos e referências de nós sempre que isso evitar avisos do analisador estático do Godot ou deixar a intenção mais clara.
 - Adicionar comentários didáticos nos blocos importantes de código, especialmente quando envolver ciclo de vida da engine, sinais, cenas, nós, estado de jogo ou contas de movimento. Evitar comentários que apenas repetem literalmente a linha.
+- Organizar arquivos por responsabilidade: cenas principais em `scenes/`, entidades reutilizáveis em `scenes/entities/`, scripts de entidades em `scripts/entities/` e scripts de orquestração/gerenciadores em `scripts/game/`.
+- Ao criar uma cena/script novo com `class_name`, não depender imediatamente desse nome global em outro script se isso puder quebrar o parser do Godot. Na fronteira entre cenas novas, preferir tipo de engine (`Node2D`, `Area2D`, `CharacterBody2D`) mais contrato claro por método/sinal, ou validar antes que o `class_name` já é reconhecido.
+- Não criar arquivos `.gd.uid` manualmente. Eles devem ser gerados pelo Godot; se aparecerem após abrir o editor, revisar e versionar junto com o script correspondente.
+- Antes de entregar, procurar referências quebradas após mover arquivos (`res://scripts/...`, `res://scenes/...`) e duplicatas/acidentes de `class_name` ou scripts criados no lugar errado.
 
 ## Modo de colaboração
 

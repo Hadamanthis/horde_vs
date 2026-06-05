@@ -1,18 +1,18 @@
 extends Node2D
 class_name XPOrb
 
-signal collected(orb: XPOrb, amount: int)
+signal collected(orb: Node2D, amount: int)
 
 @export var amount: int = 1
 @export var collect_radius: float = 22.0
 @export var magnet_radius: float = 96.0
 @export var magnet_speed: float = 220.0
 
-var player: Player
+var player: Node2D
 var _pulse_time: float = 0.0
 
 
-func setup(target_player: Player, xp_amount: int) -> void:
+func setup(target_player: Node2D, xp_amount: int) -> void:
 	# O Game injeta o jogador para o cristal saber para onde ir quando esta perto.
 	player = target_player
 	amount = xp_amount
