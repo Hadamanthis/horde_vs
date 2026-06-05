@@ -34,7 +34,7 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 
 ### Proxima prioridade
 
-Sprint 5: tela de derrota com estatisticas e reinicio claro.
+Sprint 7: progressao de partida curta rumo ao MVP de 5 minutos.
 
 ## Sprint 1 - Prototipo jogavel
 
@@ -191,17 +191,25 @@ Status: concluida em 2026-06-05.
 
 Objetivo: fechar melhor o ciclo de partida quando o jogador perde.
 
-Status: planejada.
+Status: concluida em 2026-06-05.
 
-### Entregas propostas
+### Entregue
 
 - Tela de derrota com estatisticas.
 - Mostrar tempo sobrevivido.
 - Mostrar nivel alcancado.
 - Mostrar inimigos derrotados.
 - Mostrar aliados convertidos.
-- Botao ou tecla para tentar novamente.
-- Ocultar ou reduzir debug durante a tela de derrota.
+- Botao para tentar novamente.
+- Tecla R continua reiniciando a partida.
+- Gameplay pausa quando o jogador morre.
+- Inimigos, projeteis e XP ativos sao removidos na derrota.
+- HUD debug e HUD normal saem de foco durante a tela de derrota.
+
+### Decisoes
+
+- A derrota usa pausa global de gameplay, mantendo o `Game` e o HUD em `PROCESS_MODE_ALWAYS`.
+- As estatisticas da tela de derrota usam os mesmos contadores reais do HUD/debug.
 
 ### Validacao
 
@@ -214,21 +222,33 @@ Status: planejada.
 
 Objetivo: deixar ataques, dano e conversao mais legiveis.
 
-Status: planejada.
+Status: concluida em 2026-06-05.
 
-### Entregas propostas
+### Entregue
 
 - Feedback visual quando aliado ataca.
 - Feedback visual quando inimigo recebe dano.
 - Feedback visual especifico de conversao.
 - Pequeno efeito no XP coletado.
+- Texto flutuante para dano do jogador.
+- Texto flutuante para dano dos aliados.
+- Texto flutuante para XP coletado.
+- Nova cena reutilizavel `scenes/effects/FloatingText.tscn`.
 - Melhorar diferenca visual entre inimigo e aliado.
+
+### Decisoes
+
+- O feedback de texto fica em uma cena propria para ser reutilizado sem poluir `game.gd`.
+- `game.gd` instancia o efeito como `Node2D` e chama `setup`, evitando depender do `class_name` novo imediatamente.
+- O inimigo continua responsavel pelo flash de dano do proprio visual.
+- O aliado continua responsavel pelo flash/escala do proprio ataque.
 
 ### Validacao
 
 - Jogador percebe quando aliado causa dano.
 - Conversao fica visualmente clara.
 - Tela continua legivel com varios personagens.
+- Coletar XP mostra `+XP`.
 
 ## Sprint 7 - Progressao de partida curta
 

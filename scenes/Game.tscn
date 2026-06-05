@@ -17,6 +17,8 @@ process_mode = 1
 
 [node name="XPOrbs" type="Node2D" parent="World"]
 
+[node name="Feedback" type="Node2D" parent="World"]
+
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="Stats" type="Label" parent="HUD"]
@@ -56,24 +58,50 @@ theme_override_font_sizes/font_size = 16
 text = "WASD/setas movem. Ataque automatico. R reinicia."
 horizontal_alignment = 1
 
-[node name="GameOver" type="Label" parent="HUD"]
+[node name="GameOverPanel" type="PanelContainer" parent="HUD"]
 visible = false
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -42.0
-offset_right = 180.0
-offset_bottom = 42.0
+offset_left = -270.0
+offset_top = -170.0
+offset_right = 270.0
+offset_bottom = 170.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="HUD/GameOverPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 22
+
+[node name="VBox" type="VBoxContainer" parent="HUD/GameOverPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="HUD/GameOverPanel/Margin/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.84, 0.74, 1)
 theme_override_font_sizes/font_size = 34
 text = "Derrota"
 horizontal_alignment = 1
-vertical_alignment = 1
+
+[node name="StatsText" type="Label" parent="HUD/GameOverPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Tempo: 00:00"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="HUD/GameOverPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Tentar novamente"
 
 [node name="LevelUpNotice" type="Label" parent="HUD"]
 visible = false

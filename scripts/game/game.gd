@@ -13,6 +13,7 @@ const SLIME_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/Slim
 const BAT_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BatAlly.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
 const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingText.tscn")
 
 @export var conversion_chance: float = 0.2
 @export var ally_limit: int = 5
@@ -32,10 +33,13 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 @onready var entities: Node2D = $World/Entities as Node2D
 @onready var projectiles: Node2D = $World/Projectiles as Node2D
 @onready var xp_orbs: Node2D = $World/XPOrbs as Node2D
+@onready var feedback: Node2D = $World/Feedback as Node2D
 @onready var stats_label: Label = $HUD/Stats as Label
 @onready var debug_label: Label = $HUD/DebugInfo as Label
 @onready var hint_label: Label = $HUD/Hint as Label
-@onready var game_over_label: Label = $HUD/GameOver as Label
+@onready var game_over_panel: PanelContainer = $HUD/GameOverPanel as PanelContainer
+@onready var game_over_stats_label: Label = $HUD/GameOverPanel/Margin/VBox/StatsText as Label
+@onready var game_over_restart_button: Button = $HUD/GameOverPanel/Margin/VBox/RestartButton as Button
 @onready var level_up_label: Label = $HUD/LevelUpNotice as Label
 @onready var upgrade_panel: PanelContainer = $HUD/UpgradePanel as PanelContainer
 @onready var upgrade_button_1: Button = $HUD/UpgradePanel/Margin/VBox/Upgrade1 as Button
@@ -118,6 +122,10 @@ func _ready() -> void:
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
 	upgrade_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	upgrade_panel.visible = false
+	game_over_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	game_over_panel.visible = false
+	game_over_restart_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	game_over_restart_button.pressed.connect(_restart_run)
 	upgrade_buttons.append(upgrade_button_1)
 	upgrade_buttons.append(upgrade_button_2)
 	upgrade_buttons.append(upgrade_button_3)
@@ -141,8 +149,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_R):
-		get_tree().paused = false
-		get_tree().reload_current_scene()
+		_restart_run()
 
 	if _is_choosing_upgrade:
 		_process_upgrade_shortcuts()
@@ -255,6 +262,7 @@ func _update_contact_damage() -> void:
 	if _contact_damage_timer <= 0.0:
 		_last_contact_damage = _get_touching_enemy_damage()
 		player.take_damage(_last_contact_damage)
+		spawn_damage_feedback(_last_contact_damage, player.global_position, Color(1.0, 0.38, 0.3))
 		_contact_damage_timer = contact_damage_tick_interval
 
 
@@ -329,6 +337,7 @@ func _convert_enemy(enemy_type: String, spawn_position: Vector2) -> void:
 	allies_converted += 1
 	_last_converted_enemy_type = enemy_type
 	enemy_converted.emit(enemy_type, spawn_position)
+	_spawn_feedback_text("Convertido", spawn_position + Vector2(0.0, -28.0), Color(0.55, 1.0, 0.82))
 	_refresh_ally_orbits()
 
 
@@ -348,6 +357,8 @@ func _on_xp_orb_collected(orb: Node2D, amount: int) -> void:
 	active_xp_orbs.erase(orb)
 	current_xp += amount
 	xp_collected.emit(amount)
+	if is_instance_valid(orb):
+		_spawn_feedback_text("+%d XP" % amount, orb.global_position, Color(0.82, 1.0, 0.28))
 
 	# Pode subir mais de um nivel se no futuro um cristal valer bastante XP.
 	while current_xp >= xp_to_next_level:
@@ -474,13 +485,18 @@ func _refresh_ally_orbits() -> void:
 
 
 func _on_player_died() -> void:
+	if _game_is_over:
+		return
+
 	_game_is_over = true
-	get_tree().paused = false
 	player.set_control_enabled(false)
+	upgrade_panel.visible = false
+	_is_choosing_upgrade = false
 	_clear_hostile_nodes_after_defeat()
+	get_tree().paused = true
 	game_lost.emit()
-	game_over_label.visible = true
 	hint_label.text = "Aperte R para tentar de novo"
+	_show_game_over_panel()
 	_update_hud()
 
 
@@ -501,21 +517,40 @@ func _clear_hostile_nodes_after_defeat() -> void:
 	active_xp_orbs.clear()
 
 
+func _show_game_over_panel() -> void:
+	# O painel resume a partida usando os mesmos contadores mostrados no HUD/debug.
+	game_over_stats_label.text = "Tempo sobrevivido: %s\nNivel alcancado: %d\nInimigos derrotados: %d\nAliados convertidos: %d\nAliados no fim: %d/%d" % [
+		_format_elapsed_time(),
+		player_level,
+		enemies_defeated,
+		allies_converted,
+		allies.size(),
+		ally_limit,
+	]
+	game_over_panel.visible = true
+	stats_label.visible = false
+	debug_label.visible = false
+	game_over_restart_button.grab_focus()
+
+
+func _restart_run() -> void:
+	# Sempre despausamos antes de recarregar; cenas novas devem iniciar sem herdar pausa.
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
 func _on_player_health_changed(_current_health: int, _max_health: int) -> void:
 	_update_hud()
 
 
 func _update_hud() -> void:
-	var seconds: int = int(elapsed_time) % 60
-	var minutes: int = int(elapsed_time / 60.0)
-	stats_label.text = "Vida: %d/%d\nNivel: %d\nXP: %d/%d\nTempo: %02d:%02d\nInimigos: %d\nAliados: %d/%d\nConvertidos: %d" % [
+	stats_label.text = "Vida: %d/%d\nNivel: %d\nXP: %d/%d\nTempo: %s\nInimigos: %d\nAliados: %d/%d\nConvertidos: %d" % [
 		player.current_health,
 		player.max_health,
 		player_level,
 		current_xp,
 		xp_to_next_level,
-		minutes,
-		seconds,
+		_format_elapsed_time(),
 		enemies_defeated,
 		allies.size(),
 		ally_limit,
@@ -525,8 +560,8 @@ func _update_hud() -> void:
 
 
 func _update_debug_info() -> void:
-	debug_label.visible = show_debug_info
-	if not show_debug_info:
+	debug_label.visible = show_debug_info and not _game_is_over
+	if not debug_label.visible:
 		return
 
 	var slime_count: int = _count_enemies_by_type("slime")
@@ -534,7 +569,7 @@ func _update_debug_info() -> void:
 	var slime_ally_count: int = _count_allies_by_type("slime")
 	var bat_ally_count: int = _count_allies_by_type("bat")
 	debug_label.text = "DEBUG\nEstado: %s\nInimigos vivos: %d/%d\nSlimes: %d | Bats: %d\nAliados slime: %d | bat: %d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
-		"upgrade" if _is_choosing_upgrade else "jogando",
+		_get_debug_state_name(),
 		enemies.size(),
 		max_enemies,
 		slime_count,
@@ -555,6 +590,40 @@ func _update_debug_info() -> void:
 		ally_damage_bonus,
 		_last_upgrade_id,
 	]
+
+
+func spawn_damage_feedback(amount: int, world_position: Vector2, tint: Color = Color(1.0, 0.92, 0.58)) -> void:
+	if amount <= 0 or _game_is_over:
+		return
+
+	_spawn_feedback_text("-%d" % amount, world_position + _get_feedback_offset(), tint)
+
+
+func _spawn_feedback_text(message: String, world_position: Vector2, tint: Color) -> void:
+	var floating_text: Node2D = FLOATING_TEXT_SCENE.instantiate() as Node2D
+	floating_text.global_position = world_position
+	floating_text.call("setup", message, tint)
+	feedback.add_child(floating_text)
+
+
+func _get_feedback_offset() -> Vector2:
+	# Pequena variacao evita textos perfeitamente empilhados quando varios golpes acontecem.
+	return Vector2(randf_range(-10.0, 10.0), randf_range(-18.0, -8.0))
+
+
+func _format_elapsed_time() -> String:
+	var seconds: int = int(elapsed_time) % 60
+	var minutes: int = int(elapsed_time / 60.0)
+	return "%02d:%02d" % [minutes, seconds]
+
+
+func _get_debug_state_name() -> String:
+	if _game_is_over:
+		return "derrota"
+	if _is_choosing_upgrade:
+		return "upgrade"
+
+	return "jogando"
 
 
 func _count_enemies_by_type(enemy_type: String) -> int:

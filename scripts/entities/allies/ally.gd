@@ -61,6 +61,8 @@ func _physics_process(delta: float) -> void:
 	var enemy: Enemy = _find_nearest_enemy()
 	if enemy and global_position.distance_to(enemy.global_position) <= attack_range and _attack_timer == 0.0:
 		enemy.take_damage(attack_damage)
+		if game.has_method("spawn_damage_feedback"):
+			game.call("spawn_damage_feedback", attack_damage, enemy.global_position, Color(0.55, 1.0, 0.82))
 		_attack_timer = attack_interval
 		_attack_flash_timer = attack_flash_time
 

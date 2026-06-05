@@ -26,6 +26,8 @@ func _process(delta: float) -> void:
 	var enemy: Enemy = _find_hit_enemy()
 	if enemy:
 		enemy.take_damage(damage)
+		if game.has_method("spawn_damage_feedback"):
+			game.call("spawn_damage_feedback", damage, enemy.global_position)
 		queue_free()
 		return
 
