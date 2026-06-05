@@ -19,6 +19,9 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 @export var initial_enemy_count: int = 10
 @export var xp_per_slime: int = 1
 @export var spawn_safe_margin: float = 160.0
+@export var contact_damage_per_tick: int = 6
+@export var contact_damage_tick_interval: float = 0.5
+@export var show_debug_info: bool = true
 
 # Referencias tipadas para os nos da cena principal.
 @onready var world: Node2D = $World as Node2D
@@ -28,6 +31,7 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 @onready var projectiles: Node2D = $World/Projectiles as Node2D
 @onready var xp_orbs: Node2D = $World/XPOrbs as Node2D
 @onready var stats_label: Label = $HUD/Stats as Label
+@onready var debug_label: Label = $HUD/DebugInfo as Label
 @onready var hint_label: Label = $HUD/Hint as Label
 @onready var game_over_label: Label = $HUD/GameOver as Label
 @onready var level_up_label: Label = $HUD/LevelUpNotice as Label
@@ -94,7 +98,11 @@ var xp_magnet_bonus: float = 0.0
 var elapsed_time: float = 0.0
 var _spawn_timer: float = 0.0
 var _attack_timer: float = 0.0
+var _contact_damage_timer: float = 0.0
 var _level_notice_timer: float = 0.0
+var _touching_enemy_count: int = 0
+var _last_contact_damage: int = 0
+var _last_upgrade_id: String = "-"
 var _pending_upgrade_count: int = 0
 var _is_choosing_upgrade: bool = false
 var _game_is_over: bool = false
@@ -143,8 +151,10 @@ func _process(delta: float) -> void:
 	elapsed_time += delta
 	_spawn_timer -= delta
 	_attack_timer -= delta
+	_contact_damage_timer -= delta
 	_level_notice_timer = maxf(_level_notice_timer - delta, 0.0)
 	level_up_label.visible = _level_notice_timer > 0.0
+	_update_contact_damage()
 
 	if _spawn_timer <= 0.0 and enemies.size() < max_enemies:
 		_spawn_enemy()
@@ -215,6 +225,34 @@ func _fire_player_projectile() -> void:
 	var projectile: Projectile = PROJECTILE_SCENE.instantiate() as Projectile
 	projectile.setup(player.global_position, target.global_position, player.projectile_damage, self)
 	projectiles.add_child(projectile)
+
+
+func _update_contact_damage() -> void:
+	# Dano de contato centralizado: um tick fixo se qualquer inimigo encostar.
+	_touching_enemy_count = _count_touching_enemies()
+	if _touching_enemy_count == 0:
+		_last_contact_damage = 0
+		_contact_damage_timer = 0.0
+		return
+
+	if _contact_damage_timer <= 0.0:
+		_last_contact_damage = contact_damage_per_tick
+		player.take_damage(contact_damage_per_tick)
+		_contact_damage_timer = contact_damage_tick_interval
+
+
+func _count_touching_enemies() -> int:
+	var touching_count: int = 0
+
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+
+		var distance: float = player.global_position.distance_to(enemy.global_position)
+		if distance <= enemy.contact_range:
+			touching_count += 1
+
+	return touching_count
 
 
 func _spawn_xp_orb(spawn_position: Vector2, amount: int) -> void:
@@ -339,6 +377,7 @@ func _select_upgrade(choice_index: int) -> void:
 	var upgrade: Dictionary = current_upgrade_choices[choice_index]
 	var upgrade_id: String = String(upgrade["id"])
 	_apply_upgrade(upgrade_id)
+	_last_upgrade_id = upgrade_id
 	upgrade_selected.emit(upgrade_id)
 
 	_pending_upgrade_count = maxi(_pending_upgrade_count - 1, 0)
@@ -438,6 +477,29 @@ func _update_hud() -> void:
 		allies.size(),
 		ally_limit,
 		allies_converted,
+	]
+	_update_debug_info()
+
+
+func _update_debug_info() -> void:
+	debug_label.visible = show_debug_info
+	if not show_debug_info:
+		return
+
+	debug_label.text = "DEBUG\nEstado: %s\nInimigos vivos: %d/%d\nTocando player: %d\nDano contato: %d a cada %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+		"upgrade" if _is_choosing_upgrade else "jogando",
+		enemies.size(),
+		max_enemies,
+		_touching_enemy_count,
+		contact_damage_per_tick,
+		contact_damage_tick_interval,
+		maxf(_contact_damage_timer, 0.0),
+		spawn_safe_margin,
+		conversion_chance * 100.0,
+		player.projectile_damage,
+		player.attack_interval,
+		ally_damage_bonus,
+		_last_upgrade_id,
 	]
 
 

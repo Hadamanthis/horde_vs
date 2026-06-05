@@ -67,6 +67,9 @@ Status: em andamento.
 - Gameplay foi agrupado em `World`, permitindo pausar inimigos, aliados, projetis e XP juntos durante a escolha de upgrade.
 - Spawn de inimigos agora acontece fora da area visivel da camera com margem segura.
 - `Player.tscn` e `XPOrb.tscn` passaram a ter nos `Visual` editaveis no editor, reduzindo uso de desenho escondido em script.
+- HUD de debug mostra valores usados pelo codigo para validar comportamento em jogo.
+- Dano por contato foi centralizado no `Game`: se houver inimigo encostando, aplica dano fixo por tick.
+- Inimigos ganharam separacao simples para evitar pilhas visualmente perfeitas.
 
 ### Proximas entregas
 

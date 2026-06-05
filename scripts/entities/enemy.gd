@@ -5,14 +5,13 @@ signal died(enemy: Enemy)
 
 @export var max_health: int = 24
 @export var speed: float = 68.0
-@export var contact_damage: int = 8
 @export var contact_range: float = 23.0
-@export var contact_interval: float = 0.75
 @export var convertible: bool = true
+@export var separation_radius: float = 30.0
+@export var separation_force: float = 1.35
 
 var player: Node2D
 var current_health: int = max_health
-var _contact_timer: float = 0.0
 var _hit_flash_time: float = 0.0
 
 
@@ -30,21 +29,35 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
 
-	# IA minima do MVP: andar em linha reta na direcao do jogador.
+	# IA minima do MVP: perseguir o jogador, mas mantendo separacao visual entre slimes.
 	var to_player: Vector2 = player.global_position - global_position
-	velocity = to_player.normalized() * speed
+	var chase_direction: Vector2 = to_player.normalized()
+	var separation_direction: Vector2 = _get_separation_direction()
+	var move_direction: Vector2 = (chase_direction + separation_direction * separation_force).normalized()
+	velocity = move_direction * speed
 	move_and_slide()
-
-	# Dano por contato usa distancia, nao colisao fisica, para manter o prototipo simples.
-	_contact_timer = maxf(_contact_timer - delta, 0.0)
-	if to_player.length() <= contact_range and _contact_timer == 0.0:
-		if player.has_method("take_damage"):
-			player.take_damage(contact_damage)
-		_contact_timer = contact_interval
 
 	if _hit_flash_time > 0.0:
 		_hit_flash_time -= delta
 		queue_redraw()
+
+
+func _get_separation_direction() -> Vector2:
+	# Separacao simples evita pilhas perfeitas sem precisar de pathfinding ou fisica pesada.
+	var separation: Vector2 = Vector2.ZERO
+	var neighbors: Array[Node] = get_tree().get_nodes_in_group("enemies")
+
+	for neighbor in neighbors:
+		if neighbor == self or not is_instance_valid(neighbor):
+			continue
+
+		var other_enemy: Node2D = neighbor as Node2D
+		var away: Vector2 = global_position - other_enemy.global_position
+		var distance: float = away.length()
+		if distance > 0.0 and distance < separation_radius:
+			separation += away.normalized() * (1.0 - distance / separation_radius)
+
+	return separation.normalized()
 
 
 func take_damage(amount: int) -> void:
