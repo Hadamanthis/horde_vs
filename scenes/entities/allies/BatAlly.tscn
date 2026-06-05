@@ -1,0 +1,36 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/allies/ally.gd" id="1_ally"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_bat_ally"]
+radius = 9.0
+
+[node name="BatAlly" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_ally")
+orbit_radius = 72.0
+orbit_speed = 1.85
+move_speed = 310.0
+attack_damage = 5
+attack_range = 38.0
+attack_interval = 0.38
+ally_type = "bat"
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+color = Color(0.03, 0.09, 0.11, 1)
+polygon = PackedVector2Array(-15, -4, -5, -10, 0, -7, 5, -10, 15, -4, 8, 4, 0, 9, -8, 4)
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.38, 0.92, 0.86, 1)
+polygon = PackedVector2Array(-11, -2, -4, -7, 0, -5, 4, -7, 11, -2, 6, 3, 0, 6, -6, 3)
+
+[node name="Mark" type="Polygon2D" parent="Visual"]
+color = Color(0.9, 0.72, 1, 1)
+position = Vector2(0, -1)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_bat_ally")

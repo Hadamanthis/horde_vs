@@ -48,6 +48,7 @@ A ideia central do jogo é: inimigos derrotados podem ser convertidos em aliados
 - Preferir cenas visualmente inspecionáveis no editor: entidades devem ter nós filhos claros como `Visual`, `CollisionShape2D`, `Hitbox`/`Hurtbox` quando existirem, em vez de esconder todo o visual em `_draw()`.
 - Para pausar gameplay, agrupar elementos jogáveis sob um nó `World` pausável e deixar HUD/controladores fora dele. Evitar pausar ou travar entidades individualmente quando a pausa representa estado global do jogo.
 - Para inimigos, preferir um script base com comportamento comum e uma cena concreta por tipo (`Slime.tscn`, `Bat.tscn`, etc.) contendo stats, cores, colisão e visual daquele inimigo.
+- Para aliados convertidos, seguir o mesmo padrao dos inimigos: script base compartilhado e cena concreta por tipo (`SlimeAlly.tscn`, `BatAlly.tscn`, etc.), mantendo equivalencia visual com o inimigo de origem.
 
 ## Modo de colaboração
 

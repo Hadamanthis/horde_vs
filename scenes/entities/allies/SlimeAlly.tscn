@@ -1,0 +1,36 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/allies/ally.gd" id="1_ally"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_slime_ally"]
+radius = 9.0
+
+[node name="SlimeAlly" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_ally")
+orbit_radius = 58.0
+orbit_speed = 1.45
+move_speed = 260.0
+attack_damage = 6
+attack_range = 34.0
+attack_interval = 0.45
+ally_type = "slime"
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+color = Color(0.04, 0.13, 0.11, 1)
+polygon = PackedVector2Array(0, -10, 8, -8, 10, 0, 8, 8, 0, 10, -8, 8, -10, 0, -8, -8)
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.35, 0.98, 0.66, 1)
+polygon = PackedVector2Array(0, -7, 6, -6, 7, 0, 6, 6, 0, 7, -6, 6, -7, 0, -6, -6)
+
+[node name="Mark" type="Polygon2D" parent="Visual"]
+color = Color(0.82, 1, 0.9, 1)
+position = Vector2(0, -6)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_slime_ally")

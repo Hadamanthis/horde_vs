@@ -91,3 +91,22 @@ Status: em andamento.
 
 - Tela de derrota com estatisticas.
 - Feedback visual para ataque dos aliados.
+
+## Sprint 4 - Aliados por tipo
+
+Objetivo: garantir que a mecanica principal de conversao preserve a identidade visual do inimigo convertido.
+
+Status: em andamento.
+
+### Entregue nesta sprint
+
+- Criadas cenas concretas de aliados: `SlimeAlly.tscn` e `BatAlly.tscn`.
+- Criado padrao de script base compartilhado para aliados em `scripts/entities/allies/ally.gd`.
+- Conversao agora escolhe a cena aliada pelo `enemy_type`.
+- Bat convertido agora vira bat aliado, nao slime aliado.
+- Debug mostra quantidade de aliados slime, aliados bat e ultima conversao.
+
+### Proximas entregas
+
+- Tela de derrota com estatisticas.
+- Feedback visual mais claro para ataque dos aliados.

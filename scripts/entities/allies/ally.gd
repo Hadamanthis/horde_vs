@@ -7,6 +7,10 @@ class_name Ally
 @export var attack_damage: int = 6
 @export var attack_range: float = 34.0
 @export var attack_interval: float = 0.45
+@export var ally_type: String = "slime"
+@export var attack_flash_time: float = 0.12
+
+@onready var visual: Node2D = $Visual as Node2D
 
 var player: Node2D
 var game: Node
@@ -14,6 +18,7 @@ var slot_index: int = 0
 var slot_count: int = 1
 
 var _attack_timer: float = 0.0
+var _attack_flash_timer: float = 0.0
 var _orbit_time: float = 0.0
 
 
@@ -57,6 +62,13 @@ func _physics_process(delta: float) -> void:
 	if enemy and global_position.distance_to(enemy.global_position) <= attack_range and _attack_timer == 0.0:
 		enemy.take_damage(attack_damage)
 		_attack_timer = attack_interval
+		_attack_flash_timer = attack_flash_time
+
+	if _attack_flash_timer > 0.0:
+		_attack_flash_timer = maxf(_attack_flash_timer - delta, 0.0)
+		visual.scale = Vector2.ONE * 1.25
+	else:
+		visual.scale = Vector2.ONE
 
 
 func _find_nearest_enemy() -> Enemy:
@@ -64,10 +76,3 @@ func _find_nearest_enemy() -> Enemy:
 		return null
 
 	return game.call("get_nearest_enemy", global_position, attack_range) as Enemy
-
-
-func _draw() -> void:
-	# Verde marca unidade convertida, ou seja, algo que agora joga a favor do player.
-	draw_circle(Vector2.ZERO, 10.0, Color(0.05, 0.13, 0.13))
-	draw_circle(Vector2.ZERO, 7.5, Color(0.35, 0.98, 0.66))
-	draw_circle(Vector2(0.0, -6.0), 2.0, Color(0.82, 1.0, 0.9))

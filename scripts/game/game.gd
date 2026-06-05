@@ -9,7 +9,8 @@ signal game_lost
 
 const SLIME_SCENE: PackedScene = preload("res://scenes/entities/enemies/Slime.tscn")
 const BAT_SCENE: PackedScene = preload("res://scenes/entities/enemies/Bat.tscn")
-const ALLY_SCENE: PackedScene = preload("res://scenes/entities/Ally.tscn")
+const SLIME_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/SlimeAlly.tscn")
+const BAT_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BatAlly.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
 const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 
@@ -105,6 +106,7 @@ var _touching_enemy_count: int = 0
 var _last_contact_damage: int = 0
 var _last_upgrade_id: String = "-"
 var _last_spawned_enemy_type: String = "-"
+var _last_converted_enemy_type: String = "-"
 var _pending_upgrade_count: int = 0
 var _is_choosing_upgrade: bool = false
 var _game_is_over: bool = false
@@ -317,15 +319,26 @@ func _on_enemy_died(enemy: Enemy) -> void:
 
 func _convert_enemy(enemy_type: String, spawn_position: Vector2) -> void:
 	# O aliado nasce no ponto da morte para vender visualmente a conversao.
-	var ally: Ally = ALLY_SCENE.instantiate() as Ally
+	var ally_scene: PackedScene = _get_ally_scene_for_enemy_type(enemy_type)
+	var ally: Ally = ally_scene.instantiate() as Ally
 	ally.global_position = spawn_position
 	ally.attack_damage += ally_damage_bonus
 	entities.add_child(ally)
 	allies.append(ally)
 	ally.setup(player, self, allies.size() - 1, allies.size())
 	allies_converted += 1
+	_last_converted_enemy_type = enemy_type
 	enemy_converted.emit(enemy_type, spawn_position)
 	_refresh_ally_orbits()
+
+
+func _get_ally_scene_for_enemy_type(enemy_type: String) -> PackedScene:
+	# Cada inimigo convertido vira a cena aliada equivalente ao seu tipo.
+	match enemy_type:
+		"bat":
+			return BAT_ALLY_SCENE
+		_:
+			return SLIME_ALLY_SCENE
 
 
 func _on_xp_orb_collected(orb: Node2D, amount: int) -> void:
@@ -518,13 +531,18 @@ func _update_debug_info() -> void:
 
 	var slime_count: int = _count_enemies_by_type("slime")
 	var bat_count: int = _count_enemies_by_type("bat")
-	debug_label.text = "DEBUG\nEstado: %s\nInimigos vivos: %d/%d\nSlimes: %d | Bats: %d\nUltimo spawn: %s\nBats em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	var slime_ally_count: int = _count_allies_by_type("slime")
+	var bat_ally_count: int = _count_allies_by_type("bat")
+	debug_label.text = "DEBUG\nEstado: %s\nInimigos vivos: %d/%d\nSlimes: %d | Bats: %d\nAliados slime: %d | bat: %d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
 		"upgrade" if _is_choosing_upgrade else "jogando",
 		enemies.size(),
 		max_enemies,
 		slime_count,
 		bat_count,
+		slime_ally_count,
+		bat_ally_count,
 		_last_spawned_enemy_type,
+		_last_converted_enemy_type,
 		maxf(bat_start_time - elapsed_time, 0.0),
 		_touching_enemy_count,
 		_last_contact_damage,
@@ -547,6 +565,16 @@ func _count_enemies_by_type(enemy_type: String) -> int:
 			enemy_count += 1
 
 	return enemy_count
+
+
+func _count_allies_by_type(ally_type: String) -> int:
+	var ally_count: int = 0
+
+	for ally in allies:
+		if is_instance_valid(ally) and ally.ally_type == ally_type:
+			ally_count += 1
+
+	return ally_count
 
 
 func _draw() -> void:
