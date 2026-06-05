@@ -3,6 +3,8 @@ class_name Enemy
 
 signal died(enemy: Enemy)
 signal projectile_requested(start_position: Vector2, target_position: Vector2, damage: int, projectile_speed: float, projectile_color: Color)
+signal trail_requested(spawn_position: Vector2, target_group: String, damage: int, radius: float, duration: float, tick_interval: float, color: Color)
+signal area_attack_used(target_position: Vector2, damage: int)
 
 @export var max_health: int = 24
 @export var speed: float = 68.0
@@ -11,6 +13,7 @@ signal projectile_requested(start_position: Vector2, target_position: Vector2, d
 @export var convertible: bool = true
 @export var enemy_type: String = "slime"
 @export var xp_value: int = 1
+@export var ranged_damage_multiplier: float = 1.0
 @export var movement_mode: String = "chase"
 @export var preferred_distance: float = 120.0
 @export var separation_radius: float = 24.0
@@ -26,6 +29,17 @@ signal projectile_requested(start_position: Vector2, target_position: Vector2, d
 @export var projectile_interval: float = 1.4
 @export var projectile_speed: float = 250.0
 @export var projectile_color: Color = Color(1.0, 0.55, 0.2)
+@export var uses_area_attack: bool = false
+@export var area_damage: int = 5
+@export var area_range: float = 88.0
+@export var area_interval: float = 1.5
+@export var leaves_trail: bool = false
+@export var trail_damage: int = 3
+@export var trail_radius: float = 28.0
+@export var trail_duration: float = 2.4
+@export var trail_tick_interval: float = 0.45
+@export var trail_spawn_interval: float = 0.35
+@export var trail_color: Color = Color(0.55, 0.95, 0.28, 0.42)
 @export var outline_color: Color = Color(0.18, 0.02, 0.02)
 @export var body_color: Color = Color(0.9, 0.22, 0.2)
 @export var eye_color: Color = Color(0.08, 0.01, 0.01)
@@ -46,6 +60,8 @@ var _dash_timer: float = 0.0
 var _dash_cooldown_timer: float = 0.0
 var _dash_windup_timer: float = 0.0
 var _projectile_timer: float = 0.0
+var _area_timer: float = 0.0
+var _trail_timer: float = 0.0
 
 
 func setup(target_player: Node2D) -> void:
@@ -68,10 +84,31 @@ func _physics_process(delta: float) -> void:
 	velocity = _get_velocity_for_movement_mode(delta)
 	move_and_slide()
 	_update_projectile_attack(delta)
+	_update_area_attack(delta)
+	_update_trail(delta)
 
 	if _hit_flash_time > 0.0:
 		_hit_flash_time -= delta
 		_update_visual()
+
+
+func _update_area_attack(delta: float) -> void:
+	if not uses_area_attack:
+		return
+
+	# Area attack e diferente de contato: o inimigo causa dano em pulsos enquanto o player esta no raio.
+	_area_timer = maxf(_area_timer - delta, 0.0)
+	if _area_timer > 0.0:
+		return
+
+	var distance_to_player: float = global_position.distance_to(player.global_position)
+	if distance_to_player > area_range:
+		return
+
+	player.call("take_damage", area_damage)
+	area_attack_used.emit(player.global_position, area_damage)
+	_show_pulse_feedback()
+	_area_timer = area_interval
 
 
 func _update_projectile_attack(delta: float) -> void:
@@ -88,6 +125,19 @@ func _update_projectile_attack(delta: float) -> void:
 
 	projectile_requested.emit(global_position, player.global_position, projectile_damage, projectile_speed, projectile_color)
 	_projectile_timer = projectile_interval
+
+
+func _update_trail(delta: float) -> void:
+	if not leaves_trail:
+		return
+
+	# O inimigo so pede para o Game criar o rastro; o Game decide onde instanciar efeitos globais.
+	_trail_timer = maxf(_trail_timer - delta, 0.0)
+	if _trail_timer > 0.0:
+		return
+
+	trail_requested.emit(global_position, "player", trail_damage, trail_radius, trail_duration, trail_tick_interval, trail_color)
+	_trail_timer = trail_spawn_interval
 
 
 func _get_velocity_for_movement_mode(delta: float) -> Vector2:
@@ -173,18 +223,25 @@ func _get_separation_direction() -> Vector2:
 	return separation.normalized()
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, attack_type: String = "direct") -> int:
 	if current_health <= 0:
-		return
+		return 0
+
+	# Retornar o dano real ajuda o HUD/feedback a mostrar resistencia, bloqueio ou imunidade sem mentir.
+	var final_amount: int = amount
+	if attack_type == "ranged":
+		final_amount = int(roundf(float(amount) * ranged_damage_multiplier))
 
 	# O flash visual confirma que o inimigo recebeu dano mesmo sem sprite/animacao.
-	current_health -= amount
+	current_health -= final_amount
 	_hit_flash_time = 0.08
 	_update_visual()
 
 	if current_health <= 0:
 		died.emit(self)
 		queue_free()
+
+	return final_amount
 
 
 func _update_visual() -> void:
@@ -197,3 +254,26 @@ func _update_visual() -> void:
 	body_visual.color = visible_body_color
 	left_eye_visual.color = eye_color
 	right_eye_visual.color = eye_color
+
+
+func _show_pulse_feedback() -> void:
+	var pulse_node: Node2D = get_node_or_null("Visual/Pulse") as Node2D
+	if not pulse_node:
+		return
+
+	pulse_node.visible = true
+	pulse_node.scale = Vector2.ONE * 1.25
+
+	var tween: Tween = create_tween()
+	tween.tween_property(pulse_node, "scale", Vector2.ONE * 0.2, 0.2)
+	tween.parallel().tween_property(pulse_node, "modulate:a", 0.0, 0.2)
+	tween.tween_callback(_hide_pulse_feedback.bind(pulse_node))
+
+
+func _hide_pulse_feedback(pulse_node: Node2D) -> void:
+	if not is_instance_valid(pulse_node):
+		return
+
+	pulse_node.visible = false
+	pulse_node.modulate.a = 1.0
+	pulse_node.scale = Vector2.ONE

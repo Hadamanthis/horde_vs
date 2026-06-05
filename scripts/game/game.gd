@@ -13,18 +13,23 @@ const BAT_SCENE: PackedScene = preload("res://scenes/entities/enemies/Bat.tscn")
 const BOAR_SCENE: PackedScene = preload("res://scenes/entities/enemies/Boar.tscn")
 const TOTEM_SCENE: PackedScene = preload("res://scenes/entities/enemies/Totem.tscn")
 const SPITTER_SCENE: PackedScene = preload("res://scenes/entities/enemies/Spitter.tscn")
+const CRAWLER_SCENE: PackedScene = preload("res://scenes/entities/enemies/Crawler.tscn")
+const SHIELD_SCENE: PackedScene = preload("res://scenes/entities/enemies/Shield.tscn")
 const SLIME_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/SlimeAlly.tscn")
 const BAT_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BatAlly.tscn")
 const BOAR_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BoarAlly.tscn")
 const TOTEM_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/TotemAlly.tscn")
 const SPITTER_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/SpitterAlly.tscn")
+const CRAWLER_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/CrawlerAlly.tscn")
+const SHIELD_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/ShieldAlly.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
 const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingText.tscn")
+const TRAIL_ZONE_SCENE: PackedScene = preload("res://scenes/effects/TrailZone.tscn")
 
 @export var conversion_chance: float = 0.2
 @export var ally_limit: int = 5
-@export var enabled_enemy_types: Array[String] = ["slime", "bat", "boar", "totem", "spitter"]
+@export var enabled_enemy_types: Array[String] = ["slime", "bat", "boar", "totem", "spitter", "crawler", "shield"]
 @export var max_enemies: int = 42
 @export var spawn_interval: float = 1.15
 @export var match_duration: float = 300.0
@@ -39,6 +44,10 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingT
 @export var totem_spawn_weight: float = 0.12
 @export var spitter_start_time: float = 80.0
 @export var spitter_spawn_weight: float = 0.16
+@export var crawler_start_time: float = 70.0
+@export var crawler_spawn_weight: float = 0.18
+@export var shield_start_time: float = 120.0
+@export var shield_spawn_weight: float = 0.1
 @export var spawn_safe_margin: float = 160.0
 @export var contact_damage_tick_interval: float = 0.5
 @export var show_debug_info: bool = false
@@ -283,6 +292,8 @@ func _spawn_enemy(forced_angle: float = -1.0, enemy_scene: PackedScene = null) -
 	enemy.setup(player)
 	enemy.died.connect(_on_enemy_died)
 	enemy.projectile_requested.connect(_on_enemy_projectile_requested)
+	enemy.trail_requested.connect(_on_enemy_trail_requested)
+	enemy.area_attack_used.connect(_on_enemy_area_attack_used)
 	entities.add_child(enemy)
 	enemies.append(enemy)
 	_last_spawned_enemy_type = enemy.enemy_type
@@ -317,6 +328,16 @@ func _choose_enemy_scene() -> PackedScene:
 			"scene": SPITTER_SCENE,
 			"weight": spitter_spawn_weight,
 		})
+	if _can_spawn_timed_enemy_type("crawler", crawler_start_time):
+		spawn_table.append({
+			"scene": CRAWLER_SCENE,
+			"weight": crawler_spawn_weight,
+		})
+	if _can_spawn_timed_enemy_type("shield", shield_start_time):
+		spawn_table.append({
+			"scene": SHIELD_SCENE,
+			"weight": shield_spawn_weight,
+		})
 
 	if spawn_table.is_empty():
 		return _get_initial_enemy_scene()
@@ -334,6 +355,10 @@ func _get_initial_enemy_scene() -> PackedScene:
 		return TOTEM_SCENE
 	if _is_only_enabled_enemy_type("spitter"):
 		return SPITTER_SCENE
+	if _is_only_enabled_enemy_type("crawler"):
+		return CRAWLER_SCENE
+	if _is_only_enabled_enemy_type("shield"):
+		return SHIELD_SCENE
 	if _is_enemy_type_enabled("slime"):
 		return SLIME_SCENE
 	if _is_enemy_type_enabled("bat"):
@@ -344,6 +369,10 @@ func _get_initial_enemy_scene() -> PackedScene:
 		return TOTEM_SCENE
 	if _is_enemy_type_enabled("spitter"):
 		return SPITTER_SCENE
+	if _is_enemy_type_enabled("crawler"):
+		return CRAWLER_SCENE
+	if _is_enemy_type_enabled("shield"):
+		return SHIELD_SCENE
 
 	return SLIME_SCENE
 
@@ -428,6 +457,47 @@ func _on_enemy_projectile_requested(
 	_spawn_projectile(start_position, target_position, damage, "player", projectile_speed, projectile_color)
 
 
+func _on_enemy_trail_requested(
+	spawn_position: Vector2,
+	target_group: String,
+	damage: int,
+	radius: float,
+	duration: float,
+	tick_interval: float,
+	color: Color
+) -> void:
+	if _game_is_over:
+		return
+
+	_spawn_trail_zone(spawn_position, target_group, damage, radius, duration, tick_interval, color)
+
+
+func _on_enemy_area_attack_used(target_position: Vector2, damage: int) -> void:
+	if _game_is_over:
+		return
+
+	spawn_damage_feedback(damage, target_position, Color(1.0, 0.38, 0.3))
+
+
+func spawn_ally_trail(spawn_position: Vector2, damage: int, radius: float, duration: float, tick_interval: float, color: Color) -> void:
+	_spawn_trail_zone(spawn_position, "enemies", damage, radius, duration, tick_interval, color)
+
+
+func _spawn_trail_zone(
+	spawn_position: Vector2,
+	target_group: String,
+	damage: int,
+	radius: float,
+	duration: float,
+	tick_interval: float,
+	color: Color
+) -> void:
+	var trail_zone: Node2D = TRAIL_ZONE_SCENE.instantiate() as Node2D
+	trail_zone.global_position = spawn_position
+	trail_zone.call("setup", self, target_group, damage, radius, duration, tick_interval, color)
+	feedback.add_child(trail_zone)
+
+
 func _spawn_projectile(
 	start_position: Vector2,
 	target_position: Vector2,
@@ -447,6 +517,20 @@ func get_player_if_in_range(origin: Vector2, max_distance: float) -> Player:
 
 	if origin.distance_to(player.global_position) <= max_distance:
 		return player
+
+	return null
+
+
+func get_shield_ally_if_in_range(origin: Vector2, max_distance: float) -> Ally:
+	var block_distance: float = max_distance
+
+	for ally in allies:
+		if not is_instance_valid(ally) or ally.ally_type != "shield":
+			continue
+
+		block_distance = maxf(max_distance, ally.shield_block_radius)
+		if origin.distance_to(ally.global_position) <= block_distance:
+			return ally
 
 	return null
 
@@ -550,6 +634,10 @@ func _get_ally_scene_for_enemy_type(enemy_type: String) -> PackedScene:
 			return TOTEM_ALLY_SCENE
 		"spitter":
 			return SPITTER_ALLY_SCENE
+		"crawler":
+			return CRAWLER_ALLY_SCENE
+		"shield":
+			return SHIELD_ALLY_SCENE
 		"bat":
 			return BAT_ALLY_SCENE
 		_:
@@ -794,12 +882,16 @@ func _update_debug_info() -> void:
 	var boar_count: int = _count_enemies_by_type("boar")
 	var totem_count: int = _count_enemies_by_type("totem")
 	var spitter_count: int = _count_enemies_by_type("spitter")
+	var crawler_count: int = _count_enemies_by_type("crawler")
+	var shield_count: int = _count_enemies_by_type("shield")
 	var slime_ally_count: int = _count_allies_by_type("slime")
 	var bat_ally_count: int = _count_allies_by_type("bat")
 	var boar_ally_count: int = _count_allies_by_type("boar")
 	var totem_ally_count: int = _count_allies_by_type("totem")
 	var spitter_ally_count: int = _count_allies_by_type("spitter")
-	debug_label.text = "DEBUG\nEstado: %s\nAtivos: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nS:%d B:%d J:%d T:%d A:%d\nAliados S:%d B:%d J:%d T:%d A:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nAtirador em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	var crawler_ally_count: int = _count_allies_by_type("crawler")
+	var shield_ally_count: int = _count_allies_by_type("shield")
+	debug_label.text = "DEBUG\nEstado: %s\nAtivos: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nS:%d B:%d J:%d T:%d A:%d R:%d E:%d\nAliados S:%d B:%d J:%d T:%d A:%d R:%d E:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nRastro em: %.0fs\nAtirador em: %.0fs\nShield em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
 		_get_debug_state_name(),
 		_format_enabled_enemy_types(),
 		_difficulty_progress * 100.0,
@@ -812,16 +904,22 @@ func _update_debug_info() -> void:
 		boar_count,
 		totem_count,
 		spitter_count,
+		crawler_count,
+		shield_count,
 		slime_ally_count,
 		bat_ally_count,
 		boar_ally_count,
 		totem_ally_count,
 		spitter_ally_count,
+		crawler_ally_count,
+		shield_ally_count,
 		_last_spawned_enemy_type,
 		_last_converted_enemy_type,
 		maxf(bat_start_time - elapsed_time, 0.0),
 		maxf(boar_start_time - elapsed_time, 0.0),
+		maxf(crawler_start_time - elapsed_time, 0.0),
 		maxf(spitter_start_time - elapsed_time, 0.0),
+		maxf(shield_start_time - elapsed_time, 0.0),
 		maxf(totem_start_time - elapsed_time, 0.0),
 		_touching_enemy_count,
 		_last_contact_damage,
@@ -841,6 +939,13 @@ func spawn_damage_feedback(amount: int, world_position: Vector2, tint: Color = C
 		return
 
 	_spawn_feedback_text("-%d" % amount, world_position + _get_feedback_offset(), tint)
+
+
+func spawn_status_feedback(message: String, world_position: Vector2, tint: Color) -> void:
+	if _game_is_over:
+		return
+
+	_spawn_feedback_text(message, world_position + _get_feedback_offset(), tint)
 
 
 func _spawn_feedback_text(message: String, world_position: Vector2, tint: Color) -> void:

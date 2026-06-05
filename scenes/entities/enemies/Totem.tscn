@@ -19,17 +19,22 @@ movement_mode = "skirmisher"
 preferred_distance = 150.0
 separation_radius = 34.0
 separation_force = 0.75
-shoots_projectiles = true
-projectile_damage = 5
-projectile_range = 260.0
-projectile_interval = 1.65
-projectile_speed = 190.0
-projectile_color = Color(0.48, 1, 0.82, 1)
+uses_area_attack = true
+area_damage = 6
+area_range = 92.0
+area_interval = 1.7
 outline_color = Color(0.05, 0.12, 0.11, 1)
 body_color = Color(0.1, 0.68, 0.55, 1)
 eye_color = Color(1, 0.9, 0.42, 1)
 
 [node name="Visual" type="Node2D" parent="."]
+
+[node name="Pulse" type="Node2D" parent="Visual"]
+visible = false
+
+[node name="Ring" type="Polygon2D" parent="Visual/Pulse"]
+color = Color(0.48, 1, 0.82, 0.3)
+polygon = PackedVector2Array(0, -92, 35, -85, 65, -65, 85, -35, 92, 0, 85, 35, 65, 65, 35, 85, 0, 92, -35, 85, -65, 65, -85, 35, -92, 0, -85, -35, -65, -65, -35, -85)
 
 [node name="Outline" type="Polygon2D" parent="Visual"]
 color = Color(0.05, 0.12, 0.11, 1)

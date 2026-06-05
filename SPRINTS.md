@@ -379,9 +379,13 @@ Status: em andamento.
 - Novo aliado `SpitterAlly`: fica na formacao e dispara projeteis contra inimigos.
 - Projetil foi generalizado para acertar inimigos ou jogador conforme o tipo de alvo.
 - `TotemAlly` virou uma invocacao temporaria: aparece parado ao redor do jogador, pulsa por duracao configuravel, some e entra em cooldown.
-- `Totem` inimigo agora dispara projeteis para ter ataque visivel.
+- `Totem` inimigo agora usa ataque em area com pulso visual, preservando o comportamento quando capturado.
 - `SlimeAlly` ganhou comportamento de cacador de curto alcance, parecido com o bat mas com raio menor.
 - `BatAlly` ganhou raio maior e cooldown mais alto para agir como criatura voadora mais independente.
+- Novo inimigo `Crawler`: persegue deixando um rastro temporario que causa dano por contato.
+- Novo aliado `CrawlerAlly`: orbita deixando rastro temporario que causa dano em inimigos.
+- Novo inimigo `Shield`: imune a dano de projeteis.
+- Novo aliado `ShieldAlly`: orbita o jogador, bloqueia projeteis inimigos e empurra inimigos para longe quando estao fora do raio de patrulha.
 
 ### Decisao de direcao
 
@@ -392,6 +396,8 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 - boar: investida em linha;
 - totem: invocacao estacionaria temporaria com area/pulso.
 - spitter: atirador de retaguarda.
+- crawler: controle de chao por rastro.
+- shield: defesa contra dano a distancia e empurrao defensivo.
 
 ### Ideias propostas
 
@@ -404,6 +410,7 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 - Indicador simples de composicao atual no debug antes de virar HUD definitivo.
 - Pequenas escolhas de upgrade que interagem com tipos de aliados.
 - Repensar o slime para ser mais do que melee basico, possivelmente com empurrao, lentidao, grude ou bonus por quantidade.
+- Evoluir tipos de ataque/resistencia alem de `ranged`, por exemplo fisico, area e elemental.
 
 ### Validacao
 

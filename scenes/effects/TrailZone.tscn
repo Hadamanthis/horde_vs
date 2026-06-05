@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/trail_zone.gd" id="1_trail_zone"]
+
+[node name="TrailZone" type="Node2D"]
+script = ExtResource("1_trail_zone")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Fill" type="Polygon2D" parent="Visual"]
+color = Color(0.55, 0.95, 0.28, 0.42)
+polygon = PackedVector2Array(0, -32, 12, -30, 23, -23, 30, -12, 32, 0, 30, 12, 23, 23, 12, 30, 0, 32, -12, 30, -23, 23, -30, 12, -32, 0, -30, -12, -23, -23, -12, -30)
+
+[node name="Ring" type="Polygon2D" parent="Visual"]
+color = Color(0.8, 1, 0.42, 0.65)
+polygon = PackedVector2Array(0, -34, 13, -31, 24, -24, 31, -13, 34, 0, 31, 13, 24, 24, 13, 31, 0, 34, -13, 31, -24, 24, -31, 13, -34, 0, -31, -13, -24, -24, -13, -31)

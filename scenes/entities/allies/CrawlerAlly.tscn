@@ -1,0 +1,43 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/allies/ally.gd" id="1_ally"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_crawler_ally"]
+radius = 10.0
+
+[node name="CrawlerAlly" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_ally")
+orbit_radius = 68.0
+orbit_speed = 1.2
+move_speed = 230.0
+attack_damage = 0
+attack_range = 0.0
+attack_interval = 1.0
+ally_type = "crawler"
+attack_mode = "trail"
+trail_damage = 4
+trail_radius = 30.0
+trail_duration = 2.6
+trail_tick_interval = 0.45
+trail_spawn_interval = 0.38
+trail_color = Color(0.48, 1, 0.42, 0.42)
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+color = Color(0.03, 0.1, 0.04, 1)
+polygon = PackedVector2Array(-12, -6, 0, -10, 12, -6, 10, 6, 0, 10, -10, 6)
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.42, 1, 0.52, 1)
+polygon = PackedVector2Array(-8, -4, 0, -7, 8, -4, 7, 4, 0, 7, -7, 4)
+
+[node name="Mark" type="Polygon2D" parent="Visual"]
+color = Color(0.9, 1, 0.52, 1)
+position = Vector2(0, -1)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_crawler_ally")

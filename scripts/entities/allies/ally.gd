@@ -22,6 +22,15 @@ class_name Ally
 @export var stationary_cooldown: float = 3.5
 @export var stationary_min_distance: float = 120.0
 @export var stationary_max_distance: float = 190.0
+@export var trail_damage: int = 3
+@export var trail_radius: float = 28.0
+@export var trail_duration: float = 2.4
+@export var trail_tick_interval: float = 0.45
+@export var trail_spawn_interval: float = 0.38
+@export var trail_color: Color = Color(0.52, 1.0, 0.44, 0.42)
+@export var shield_block_radius: float = 34.0
+@export var shield_push_radius: float = 58.0
+@export var shield_push_distance: float = 16.0
 @export var attack_flash_time: float = 0.12
 
 @onready var visual: Node2D = $Visual as Node2D
@@ -43,6 +52,7 @@ var _pursuit_timer: float = 0.0
 var _stationary_is_active: bool = false
 var _stationary_duration_timer: float = 0.0
 var _stationary_cooldown_timer: float = 0.0
+var _trail_timer: float = 0.0
 
 
 func setup(target_player: Node2D, game_node: Node, index: int, count: int) -> void:
@@ -105,6 +115,12 @@ func _physics_process(delta: float) -> void:
 	velocity = (desired_position - global_position) * 6.0
 	velocity = velocity.limit_length(move_speed)
 	move_and_slide()
+
+	if attack_mode == "trail":
+		_update_trail(delta)
+
+	if attack_mode == "shield":
+		_push_enemies_away_from_player()
 
 	if _attack_timer == 0.0:
 		_try_attack()
@@ -192,7 +208,7 @@ func _process_pursuit_attack(delta: float) -> void:
 
 	var to_enemy: Vector2 = _pursuit_target.global_position - global_position
 	if to_enemy.length() <= pursuit_hit_radius:
-		_pursuit_target.take_damage(attack_damage)
+		_pursuit_target.take_damage(attack_damage, "melee")
 		_spawn_damage_feedback(_pursuit_target.global_position)
 		_end_pursuit_attack(false)
 		_update_attack_feedback(delta)
@@ -239,6 +255,10 @@ func _try_attack() -> void:
 			return
 		"shooter":
 			_try_projectile_attack()
+		"trail":
+			return
+		"shield":
+			return
 		_:
 			_try_single_target_attack(false)
 
@@ -253,7 +273,7 @@ func _try_single_target_attack(should_lunge: bool) -> void:
 		_begin_dash_attack(enemy)
 		return
 
-	enemy.take_damage(attack_damage)
+	enemy.take_damage(attack_damage, "melee")
 	_spawn_damage_feedback(enemy.global_position)
 	_start_attack_cooldown()
 
@@ -269,7 +289,7 @@ func _try_aura_attack() -> void:
 			continue
 
 		if global_position.distance_to(enemy.global_position) <= attack_range:
-			enemy.take_damage(attack_damage)
+			enemy.take_damage(attack_damage, "area")
 			_spawn_damage_feedback(enemy.global_position)
 			hit_any_enemy = true
 
@@ -332,7 +352,7 @@ func _damage_enemies_during_dash() -> void:
 			continue
 
 		if global_position.distance_to(enemy.global_position) <= attack_dash_hit_radius:
-			enemy.take_damage(attack_damage)
+			enemy.take_damage(attack_damage, "melee")
 			_dash_hit_enemies.append(enemy)
 			_spawn_damage_feedback(enemy.global_position)
 
@@ -345,6 +365,35 @@ func _spawn_damage_feedback(world_position: Vector2) -> void:
 func _start_attack_cooldown() -> void:
 	_attack_timer = attack_interval
 	_attack_flash_timer = attack_flash_time
+
+
+func _update_trail(delta: float) -> void:
+	# Aliado crawler nao escolhe alvo: ele controla espaco deixando zonas de dano pelo caminho.
+	_trail_timer = maxf(_trail_timer - delta, 0.0)
+	if _trail_timer > 0.0:
+		return
+
+	if is_instance_valid(game) and game.has_method("spawn_ally_trail"):
+		game.call("spawn_ally_trail", global_position, trail_damage, trail_radius, trail_duration, trail_tick_interval, trail_color)
+	_trail_timer = trail_spawn_interval
+
+
+func _push_enemies_away_from_player() -> void:
+	# O shield empurra sempre para fora do player, evitando jogar inimigos para dentro da area segura.
+	var nearby_nodes: Array[Node] = get_tree().get_nodes_in_group("enemies")
+
+	for nearby_node in nearby_nodes:
+		var enemy: Enemy = nearby_node as Enemy
+		if not is_instance_valid(enemy):
+			continue
+
+		var enemy_distance_to_player: float = enemy.global_position.distance_to(player.global_position)
+		var enemy_distance_to_shield: float = enemy.global_position.distance_to(global_position)
+		if enemy_distance_to_player <= orbit_radius or enemy_distance_to_shield > shield_push_radius:
+			continue
+
+		var push_direction: Vector2 = (enemy.global_position - player.global_position).normalized()
+		enemy.global_position += push_direction * shield_push_distance
 
 
 func _is_inside_command_radius() -> bool:

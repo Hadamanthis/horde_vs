@@ -5,6 +5,7 @@ class_name Projectile
 @export var hit_radius: float = 12.0
 @export var lifetime: float = 1.3
 @export var target_group: String = "enemies"
+@export var attack_type: String = "ranged"
 @export var outer_color: Color = Color(0.03, 0.02, 0.07)
 @export var inner_color: Color = Color(0.72, 0.38, 1.0)
 
@@ -39,9 +40,13 @@ func _process(delta: float) -> void:
 
 	var target: Node2D = _find_hit_target()
 	if target:
-		target.call("take_damage", damage)
+		var actual_damage: int = damage
+		if target_group == "player":
+			target.call("take_damage", damage)
+		else:
+			actual_damage = int(target.call("take_damage", damage, attack_type))
 		if game.has_method("spawn_damage_feedback"):
-			game.call("spawn_damage_feedback", damage, target.global_position, _get_feedback_color())
+			game.call("spawn_damage_feedback", actual_damage, target.global_position, _get_feedback_color())
 		queue_free()
 		return
 
@@ -52,6 +57,15 @@ func _process(delta: float) -> void:
 func _find_hit_target() -> Node2D:
 	if not is_instance_valid(game):
 		return null
+
+	# Projeteis inimigos podem ser aparados por shields aliados antes de chegar no player.
+	if target_group == "player" and game.has_method("get_shield_ally_if_in_range"):
+		var shield_ally: Node2D = game.call("get_shield_ally_if_in_range", global_position, hit_radius) as Node2D
+		if shield_ally:
+			if game.has_method("spawn_status_feedback"):
+				game.call("spawn_status_feedback", "Bloqueio", shield_ally.global_position, Color(0.62, 0.86, 1.0))
+			queue_free()
+			return null
 
 	if target_group == "player" and game.has_method("get_player_if_in_range"):
 		return game.call("get_player_if_in_range", global_position, hit_radius) as Node2D
