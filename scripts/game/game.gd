@@ -4,6 +4,7 @@ signal enemy_died(enemy_type: String, death_position: Vector2)
 signal enemy_converted(enemy_type: String, conversion_position: Vector2)
 signal xp_collected(amount: int)
 signal level_up(new_level: int)
+signal upgrade_selected(upgrade_id: String)
 signal game_lost
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/entities/Enemy.tscn")
@@ -20,6 +21,7 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 
 # Referencias tipadas para os nos da cena principal.
 @onready var player: Player = $Player as Player
+@onready var player_camera: Camera2D = $Player/Camera2D as Camera2D
 @onready var entities: Node2D = $Entities as Node2D
 @onready var projectiles: Node2D = $Projectiles as Node2D
 @onready var xp_orbs: Node2D = $XPOrbs as Node2D
@@ -27,29 +29,92 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 @onready var hint_label: Label = $HUD/Hint as Label
 @onready var game_over_label: Label = $HUD/GameOver as Label
 @onready var level_up_label: Label = $HUD/LevelUpNotice as Label
+@onready var upgrade_panel: PanelContainer = $HUD/UpgradePanel as PanelContainer
+@onready var upgrade_button_1: Button = $HUD/UpgradePanel/Margin/VBox/Upgrade1 as Button
+@onready var upgrade_button_2: Button = $HUD/UpgradePanel/Margin/VBox/Upgrade2 as Button
+@onready var upgrade_button_3: Button = $HUD/UpgradePanel/Margin/VBox/Upgrade3 as Button
 
 var enemies: Array[Enemy] = []
 var allies: Array[Ally] = []
 var active_xp_orbs: Array[Node2D] = []
+var upgrade_buttons: Array[Button] = []
+var current_upgrade_choices: Array[Dictionary] = []
+var upgrade_pool: Array[Dictionary] = [
+	{
+		"id": "orb_damage",
+		"name": "Orbe mais forte",
+		"description": "+3 dano no projetil automatico.",
+	},
+	{
+		"id": "attack_speed",
+		"name": "Ritual apressado",
+		"description": "Ataque automatico 12% mais rapido.",
+	},
+	{
+		"id": "move_speed",
+		"name": "Passo sombrio",
+		"description": "+10% velocidade de movimento.",
+	},
+	{
+		"id": "conversion_chance",
+		"name": "Chamado sombrio",
+		"description": "+10% chance de converter inimigos.",
+	},
+	{
+		"id": "ally_limit",
+		"name": "Horda maior",
+		"description": "+2 limite de aliados.",
+	},
+	{
+		"id": "ally_damage",
+		"name": "Garras da horda",
+		"description": "Aliados causam +2 dano.",
+	},
+	{
+		"id": "max_health",
+		"name": "Sangue reserva",
+		"description": "+20 vida maxima e cura 20.",
+	},
+	{
+		"id": "pickup_range",
+		"name": "Ima de almas",
+		"description": "Cristais de XP sao atraidos de mais longe.",
+	},
+]
 
 var enemies_defeated: int = 0
 var allies_converted: int = 0
 var player_level: int = 1
 var current_xp: int = 0
 var xp_to_next_level: int = 5
+var ally_damage_bonus: int = 0
+var xp_magnet_bonus: float = 0.0
 var elapsed_time: float = 0.0
 var _spawn_timer: float = 0.0
 var _attack_timer: float = 0.0
 var _level_notice_timer: float = 0.0
+var _pending_upgrade_count: int = 0
+var _is_choosing_upgrade: bool = false
 var _game_is_over: bool = false
 
 
 func _ready() -> void:
 	randomize()
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	upgrade_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	upgrade_panel.visible = false
+	upgrade_buttons.append(upgrade_button_1)
+	upgrade_buttons.append(upgrade_button_2)
+	upgrade_buttons.append(upgrade_button_3)
 
 	# Sinais deixam o Player avisar o Game sem conhecer a estrutura da cena inteira.
 	player.died.connect(_on_player_died)
 	player.health_changed.connect(_on_player_health_changed)
+
+	for index in range(upgrade_buttons.size()):
+		var button: Button = upgrade_buttons[index]
+		button.process_mode = Node.PROCESS_MODE_ALWAYS
+		button.pressed.connect(_select_upgrade.bind(index))
 
 	# Comecamos com slimes ao redor do jogador para testar o loop imediatamente.
 	for index in range(initial_enemy_count):
@@ -63,6 +128,10 @@ func _process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_R):
 		get_tree().reload_current_scene()
 
+	if _is_choosing_upgrade:
+		_process_upgrade_shortcuts()
+		return
+
 	# Depois da derrota, apenas o atalho de reinicio continua ativo.
 	if _game_is_over:
 		return
@@ -70,7 +139,7 @@ func _process(delta: float) -> void:
 	elapsed_time += delta
 	_spawn_timer -= delta
 	_attack_timer -= delta
-	_level_notice_timer = max(_level_notice_timer - delta, 0.0)
+	_level_notice_timer = maxf(_level_notice_timer - delta, 0.0)
 	level_up_label.visible = _level_notice_timer > 0.0
 
 	if _spawn_timer <= 0.0 and enemies.size() < max_enemies:
@@ -133,6 +202,9 @@ func _spawn_xp_orb(spawn_position: Vector2, amount: int) -> void:
 	var orb: Node2D = XP_ORB_SCENE.instantiate() as Node2D
 	orb.global_position = spawn_position
 	orb.call("setup", player, amount)
+	if xp_magnet_bonus > 0.0:
+		var magnet_radius: float = float(orb.get("magnet_radius"))
+		orb.set("magnet_radius", magnet_radius + xp_magnet_bonus)
 	orb.connect("collected", Callable(self, "_on_xp_orb_collected"))
 	xp_orbs.add_child(orb)
 	active_xp_orbs.append(orb)
@@ -159,6 +231,7 @@ func _convert_enemy(spawn_position: Vector2) -> void:
 	# O aliado nasce no ponto da morte para vender visualmente a conversao.
 	var ally: Ally = ALLY_SCENE.instantiate() as Ally
 	ally.global_position = spawn_position
+	ally.attack_damage += ally_damage_bonus
 	entities.add_child(ally)
 	allies.append(ally)
 	ally.setup(player, self, allies.size() - 1, allies.size())
@@ -188,7 +261,106 @@ func _gain_level() -> void:
 	xp_to_next_level = int(ceil(float(xp_to_next_level) * 1.35 + 3.0))
 	level_up_label.text = "Nivel %d" % player_level
 	_level_notice_timer = 1.4
+	_pending_upgrade_count += 1
 	level_up.emit(player_level)
+
+	if not _is_choosing_upgrade:
+		_open_upgrade_choices()
+
+
+func _open_upgrade_choices() -> void:
+	# Durante a escolha, pausamos a simulacao para o jogador decidir sem ser punido.
+	_is_choosing_upgrade = true
+	get_tree().paused = true
+	player.set_control_enabled(false)
+
+	current_upgrade_choices = _roll_upgrade_choices(3)
+	for index in range(upgrade_buttons.size()):
+		var upgrade: Dictionary = current_upgrade_choices[index]
+		var button: Button = upgrade_buttons[index]
+		button.text = "%d. %s\n%s" % [
+			index + 1,
+			String(upgrade["name"]),
+			String(upgrade["description"]),
+		]
+
+	upgrade_panel.visible = true
+	hint_label.text = "Escolha um upgrade com clique ou teclas 1/2/3"
+
+
+func _roll_upgrade_choices(amount: int) -> Array[Dictionary]:
+	var available_upgrades: Array[Dictionary] = []
+	var choices: Array[Dictionary] = []
+
+	for upgrade in upgrade_pool:
+		available_upgrades.append(upgrade)
+
+	while choices.size() < amount and available_upgrades.size() > 0:
+		var chosen_index: int = randi_range(0, available_upgrades.size() - 1)
+		choices.append(available_upgrades[chosen_index])
+		available_upgrades.remove_at(chosen_index)
+
+	return choices
+
+
+func _process_upgrade_shortcuts() -> void:
+	if Input.is_key_pressed(KEY_1):
+		_select_upgrade(0)
+	elif Input.is_key_pressed(KEY_2):
+		_select_upgrade(1)
+	elif Input.is_key_pressed(KEY_3):
+		_select_upgrade(2)
+
+
+func _select_upgrade(choice_index: int) -> void:
+	if not _is_choosing_upgrade or choice_index >= current_upgrade_choices.size():
+		return
+
+	var upgrade: Dictionary = current_upgrade_choices[choice_index]
+	var upgrade_id: String = String(upgrade["id"])
+	_apply_upgrade(upgrade_id)
+	upgrade_selected.emit(upgrade_id)
+
+	_pending_upgrade_count = maxi(_pending_upgrade_count - 1, 0)
+	if _pending_upgrade_count > 0:
+		_open_upgrade_choices()
+		return
+
+	_is_choosing_upgrade = false
+	current_upgrade_choices.clear()
+	upgrade_panel.visible = false
+	hint_label.text = "WASD/setas movem. Ataque automatico. R reinicia."
+	player.set_control_enabled(true)
+	get_tree().paused = false
+	_update_hud()
+
+
+func _apply_upgrade(upgrade_id: String) -> void:
+	match upgrade_id:
+		"orb_damage":
+			player.projectile_damage += 3
+		"attack_speed":
+			player.attack_interval = maxf(player.attack_interval * 0.88, 0.35)
+		"move_speed":
+			player.speed *= 1.1
+		"conversion_chance":
+			conversion_chance = minf(conversion_chance + 0.1, 0.75)
+		"ally_limit":
+			ally_limit += 2
+			_refresh_ally_orbits()
+		"ally_damage":
+			ally_damage_bonus += 2
+			for ally in allies:
+				if is_instance_valid(ally):
+					ally.attack_damage += 2
+		"max_health":
+			player.increase_max_health(20)
+		"pickup_range":
+			xp_magnet_bonus += 40.0
+			for orb in active_xp_orbs:
+				if is_instance_valid(orb):
+					var magnet_radius: float = float(orb.get("magnet_radius"))
+					orb.set("magnet_radius", magnet_radius + 40.0)
 
 
 func _refresh_ally_orbits() -> void:
@@ -201,6 +373,7 @@ func _refresh_ally_orbits() -> void:
 
 func _on_player_died() -> void:
 	_game_is_over = true
+	get_tree().paused = false
 	player.set_control_enabled(false)
 	_clear_hostile_nodes_after_defeat()
 	game_lost.emit()
@@ -249,22 +422,30 @@ func _update_hud() -> void:
 
 
 func _draw() -> void:
-	# O fundo e desenhado por codigo para termos um mapa legivel antes da arte final.
+	# O fundo acompanha a camera e considera o zoom; assim nao sobra borda cinza na tela.
 	var viewport_rect: Rect2 = get_viewport_rect()
 	var camera_center: Vector2 = Vector2.ZERO
-	if is_instance_valid(player):
+	var visible_size: Vector2 = viewport_rect.size
+	if is_instance_valid(player_camera):
+		camera_center = player_camera.get_screen_center_position()
+		visible_size = Vector2(
+			viewport_rect.size.x / player_camera.zoom.x,
+			viewport_rect.size.y / player_camera.zoom.y
+		)
+	elif is_instance_valid(player):
 		camera_center = player.global_position
 
-	var top_left: Vector2 = camera_center - viewport_rect.size * 0.5
+	visible_size += Vector2(256.0, 256.0)
+	var top_left: Vector2 = camera_center - visible_size * 0.5
 
-	draw_rect(Rect2(top_left, viewport_rect.size), Color(0.08, 0.09, 0.1), true)
+	draw_rect(Rect2(top_left, visible_size), Color(0.055, 0.065, 0.07), true)
 
-	var grid_color: Color = Color(0.16, 0.18, 0.17, 0.45)
+	var grid_color: Color = Color(0.13, 0.17, 0.15, 0.55)
 	var grid_size: float = 64.0
 	var start_x: float = floorf(top_left.x / grid_size) * grid_size
-	var end_x: float = top_left.x + viewport_rect.size.x
+	var end_x: float = top_left.x + visible_size.x
 	var start_y: float = floorf(top_left.y / grid_size) * grid_size
-	var end_y: float = top_left.y + viewport_rect.size.y
+	var end_y: float = top_left.y + visible_size.y
 
 	var x: float = start_x
 	while x <= end_x:

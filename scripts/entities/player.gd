@@ -38,13 +38,21 @@ func take_damage(amount: int) -> void:
 	if current_health <= 0:
 		return
 
-	current_health = max(current_health - amount, 0)
+	current_health = maxi(current_health - amount, 0)
 	_hit_flash_time = 0.12
 	health_changed.emit(current_health, max_health)
 	queue_redraw()
 
 	if current_health == 0:
 		died.emit()
+
+
+func increase_max_health(amount: int) -> void:
+	# Upgrade defensivo: aumenta vida maxima e cura o mesmo valor para ser sentido na hora.
+	max_health += amount
+	current_health = mini(current_health + amount, max_health)
+	health_changed.emit(current_health, max_health)
+	queue_redraw()
 
 
 func set_control_enabled(is_enabled: bool) -> void:

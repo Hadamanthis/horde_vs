@@ -39,9 +39,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# Cristal amarelo/verde para diferenciar recurso de inimigo e aliado.
+	# Cristal alto contraste: brilho ciano + nucleo amarelo para aparecer no chao escuro.
 	var pulse: float = 1.0 + sin(_pulse_time * 8.0) * 0.12
-	var radius: float = 5.0 * pulse
+	var radius: float = 8.0 * pulse
 	var points: PackedVector2Array = PackedVector2Array([
 		Vector2(0.0, -radius),
 		Vector2(radius * 0.8, 0.0),
@@ -58,5 +58,7 @@ func _draw() -> void:
 		Color(0.75, 1.0, 0.35),
 	])
 
+	draw_circle(Vector2.ZERO, radius + 5.0, Color(0.02, 0.07, 0.08, 0.82))
+	draw_circle(Vector2.ZERO, radius + 2.0, Color(0.14, 0.95, 1.0, 0.38))
 	draw_polygon(points, fill_colors)
-	draw_polyline(outline, Color(0.16, 0.24, 0.08), 1.0)
+	draw_polyline(outline, Color(0.03, 0.08, 0.04), 2.0)

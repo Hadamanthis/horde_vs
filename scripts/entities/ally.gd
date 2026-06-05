@@ -21,12 +21,12 @@ func setup(target_player: Node2D, game_node: Node, index: int, count: int) -> vo
 	player = target_player
 	game = game_node
 	slot_index = index
-	slot_count = max(count, 1)
+	slot_count = maxi(count, 1)
 
 
 func update_orbit_slot(index: int, count: int) -> void:
 	slot_index = index
-	slot_count = max(count, 1)
+	slot_count = maxi(count, 1)
 
 
 func _ready() -> void:
@@ -38,13 +38,13 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_orbit_time += delta * orbit_speed
-	_attack_timer = max(_attack_timer - delta, 0.0)
+	_attack_timer = maxf(_attack_timer - delta, 0.0)
 
 	# A orbita evita IA complexa e deixa a horda facil de ler ao redor do jogador.
 	var ring: int = floori(float(slot_index) / 10.0)
-	var members_in_ring: int = min(slot_count - ring * 10, 10)
+	var members_in_ring: int = mini(slot_count - ring * 10, 10)
 	var local_index: int = slot_index - ring * 10
-	var angle_step: float = TAU / max(float(members_in_ring), 1.0)
+	var angle_step: float = TAU / maxf(float(members_in_ring), 1.0)
 	var angle: float = local_index * angle_step + _orbit_time + ring * 0.55
 	var desired_position: Vector2 = player.global_position + Vector2.RIGHT.rotated(angle) * (orbit_radius + ring * 28.0)
 

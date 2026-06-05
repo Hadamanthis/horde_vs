@@ -20,7 +20,7 @@ script = ExtResource("1_game")
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 320.0
-offset_bottom = 160.0
+offset_bottom = 230.0
 theme_override_colors/font_color = Color(0.9, 0.96, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Vida: 100/100"
@@ -76,3 +76,52 @@ theme_override_font_sizes/font_size = 28
 text = "Nivel 2"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="UpgradePanel" type="PanelContainer" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -150.0
+offset_right = 260.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="HUD/UpgradePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="HUD/UpgradePanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="HUD/UpgradePanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Escolha um upgrade"
+horizontal_alignment = 1
+
+[node name="Upgrade1" type="Button" parent="HUD/UpgradePanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1. Upgrade"
+
+[node name="Upgrade2" type="Button" parent="HUD/UpgradePanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "2. Upgrade"
+
+[node name="Upgrade3" type="Button" parent="HUD/UpgradePanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "3. Upgrade"

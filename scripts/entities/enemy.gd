@@ -36,7 +36,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	# Dano por contato usa distancia, nao colisao fisica, para manter o prototipo simples.
-	_contact_timer = max(_contact_timer - delta, 0.0)
+	_contact_timer = maxf(_contact_timer - delta, 0.0)
 	if to_player.length() <= contact_range and _contact_timer == 0.0:
 		if player.has_method("take_damage"):
 			player.take_damage(contact_damage)
