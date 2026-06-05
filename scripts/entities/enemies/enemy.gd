@@ -5,10 +5,22 @@ signal died(enemy: Enemy)
 
 @export var max_health: int = 24
 @export var speed: float = 68.0
+@export var contact_damage: int = 6
 @export var contact_range: float = 23.0
 @export var convertible: bool = true
-@export var separation_radius: float = 30.0
-@export var separation_force: float = 1.35
+@export var enemy_type: String = "slime"
+@export var xp_value: int = 1
+@export var separation_radius: float = 24.0
+@export var separation_force: float = 0.55
+@export var outline_color: Color = Color(0.18, 0.02, 0.02)
+@export var body_color: Color = Color(0.9, 0.22, 0.2)
+@export var eye_color: Color = Color(0.08, 0.01, 0.01)
+@export var hit_flash_color: Color = Color(1.0, 0.95, 0.72)
+
+@onready var outline_visual: Polygon2D = $Visual/Outline as Polygon2D
+@onready var body_visual: Polygon2D = $Visual/Body as Polygon2D
+@onready var left_eye_visual: Polygon2D = $Visual/LeftEye as Polygon2D
+@onready var right_eye_visual: Polygon2D = $Visual/RightEye as Polygon2D
 
 var player: Node2D
 var current_health: int = max_health
@@ -23,6 +35,7 @@ func setup(target_player: Node2D) -> void:
 func _ready() -> void:
 	current_health = max_health
 	add_to_group("enemies")
+	_update_visual()
 
 
 func _physics_process(delta: float) -> void:
@@ -39,7 +52,7 @@ func _physics_process(delta: float) -> void:
 
 	if _hit_flash_time > 0.0:
 		_hit_flash_time -= delta
-		queue_redraw()
+		_update_visual()
 
 
 func _get_separation_direction() -> Vector2:
@@ -67,20 +80,20 @@ func take_damage(amount: int) -> void:
 	# O flash visual confirma que o inimigo recebeu dano mesmo sem sprite/animacao.
 	current_health -= amount
 	_hit_flash_time = 0.08
-	queue_redraw()
+	_update_visual()
 
 	if current_health <= 0:
 		died.emit(self)
 		queue_free()
 
 
-func _draw() -> void:
-	# Vermelho identifica ameacas; aliados usam verde para separar times rapidamente.
-	var body_color: Color = Color(0.9, 0.22, 0.2)
+func _update_visual() -> void:
+	# Cada cena concreta define suas cores; o script so aplica feedback de dano.
+	var visible_body_color: Color = body_color
 	if _hit_flash_time > 0.0:
-		body_color = Color(1.0, 0.95, 0.72)
+		visible_body_color = hit_flash_color
 
-	draw_circle(Vector2.ZERO, 12.0, Color(0.18, 0.02, 0.02))
-	draw_circle(Vector2.ZERO, 9.0, body_color)
-	draw_circle(Vector2(-3.0, -2.0), 1.6, Color(0.08, 0.01, 0.01))
-	draw_circle(Vector2(3.0, -2.0), 1.6, Color(0.08, 0.01, 0.01))
+	outline_visual.color = outline_color
+	body_visual.color = visible_body_color
+	left_eye_visual.color = eye_color
+	right_eye_visual.color = eye_color

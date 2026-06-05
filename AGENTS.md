@@ -47,6 +47,7 @@ A ideia central do jogo é: inimigos derrotados podem ser convertidos em aliados
 - Antes de entregar, procurar referências quebradas após mover arquivos (`res://scripts/...`, `res://scenes/...`) e duplicatas/acidentes de `class_name` ou scripts criados no lugar errado.
 - Preferir cenas visualmente inspecionáveis no editor: entidades devem ter nós filhos claros como `Visual`, `CollisionShape2D`, `Hitbox`/`Hurtbox` quando existirem, em vez de esconder todo o visual em `_draw()`.
 - Para pausar gameplay, agrupar elementos jogáveis sob um nó `World` pausável e deixar HUD/controladores fora dele. Evitar pausar ou travar entidades individualmente quando a pausa representa estado global do jogo.
+- Para inimigos, preferir um script base com comportamento comum e uma cena concreta por tipo (`Slime.tscn`, `Bat.tscn`, etc.) contendo stats, cores, colisão e visual daquele inimigo.
 
 ## Modo de colaboração
 

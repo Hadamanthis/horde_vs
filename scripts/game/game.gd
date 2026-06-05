@@ -7,7 +7,8 @@ signal level_up(new_level: int)
 signal upgrade_selected(upgrade_id: String)
 signal game_lost
 
-const ENEMY_SCENE: PackedScene = preload("res://scenes/entities/Enemy.tscn")
+const SLIME_SCENE: PackedScene = preload("res://scenes/entities/enemies/Slime.tscn")
+const BAT_SCENE: PackedScene = preload("res://scenes/entities/enemies/Bat.tscn")
 const ALLY_SCENE: PackedScene = preload("res://scenes/entities/Ally.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
 const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
@@ -17,9 +18,9 @@ const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 @export var max_enemies: int = 42
 @export var spawn_interval: float = 1.15
 @export var initial_enemy_count: int = 10
-@export var xp_per_slime: int = 1
+@export var bat_start_time: float = 25.0
+@export var bat_spawn_chance: float = 0.25
 @export var spawn_safe_margin: float = 160.0
-@export var contact_damage_per_tick: int = 6
 @export var contact_damage_tick_interval: float = 0.5
 @export var show_debug_info: bool = true
 
@@ -103,6 +104,7 @@ var _level_notice_timer: float = 0.0
 var _touching_enemy_count: int = 0
 var _last_contact_damage: int = 0
 var _last_upgrade_id: String = "-"
+var _last_spawned_enemy_type: String = "-"
 var _pending_upgrade_count: int = 0
 var _is_choosing_upgrade: bool = false
 var _game_is_over: bool = false
@@ -129,7 +131,7 @@ func _ready() -> void:
 
 	# Comecamos com slimes ao redor do jogador para testar o loop imediatamente.
 	for index in range(initial_enemy_count):
-		_spawn_enemy(index * TAU / initial_enemy_count)
+		_spawn_enemy(index * TAU / initial_enemy_count, SLIME_SCENE)
 
 	_update_hud()
 	queue_redraw()
@@ -185,13 +187,26 @@ func get_nearest_enemy(origin: Vector2, max_distance: float) -> Enemy:
 	return nearest_enemy
 
 
-func _spawn_enemy(forced_angle: float = -1.0) -> void:
-	var enemy: Enemy = ENEMY_SCENE.instantiate() as Enemy
+func _spawn_enemy(forced_angle: float = -1.0, enemy_scene: PackedScene = null) -> void:
+	var scene_to_spawn: PackedScene = enemy_scene
+	if not scene_to_spawn:
+		scene_to_spawn = _choose_enemy_scene()
+
+	var enemy: Enemy = scene_to_spawn.instantiate() as Enemy
 	enemy.global_position = _get_spawn_position_outside_camera(forced_angle)
 	enemy.setup(player)
 	enemy.died.connect(_on_enemy_died)
 	entities.add_child(enemy)
 	enemies.append(enemy)
+	_last_spawned_enemy_type = enemy.enemy_type
+
+
+func _choose_enemy_scene() -> PackedScene:
+	# A progressao ainda e simples: morcegos entram depois de alguns segundos.
+	if elapsed_time >= bat_start_time and randf() <= bat_spawn_chance:
+		return BAT_SCENE
+
+	return SLIME_SCENE
 
 
 func _get_spawn_position_outside_camera(forced_angle: float = -1.0) -> Vector2:
@@ -236,8 +251,8 @@ func _update_contact_damage() -> void:
 		return
 
 	if _contact_damage_timer <= 0.0:
-		_last_contact_damage = contact_damage_per_tick
-		player.take_damage(contact_damage_per_tick)
+		_last_contact_damage = _get_touching_enemy_damage()
+		player.take_damage(_last_contact_damage)
 		_contact_damage_timer = contact_damage_tick_interval
 
 
@@ -253,6 +268,21 @@ func _count_touching_enemies() -> int:
 			touching_count += 1
 
 	return touching_count
+
+
+func _get_touching_enemy_damage() -> int:
+	# Por enquanto nao somamos dano de varios inimigos; usamos o maior dano encostando.
+	var contact_damage: int = 0
+
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+
+		var distance: float = player.global_position.distance_to(enemy.global_position)
+		if distance <= enemy.contact_range:
+			contact_damage = maxi(contact_damage, enemy.contact_damage)
+
+	return contact_damage
 
 
 func _spawn_xp_orb(spawn_position: Vector2, amount: int) -> void:
@@ -275,17 +305,17 @@ func _on_enemy_died(enemy: Enemy) -> void:
 	var death_position: Vector2 = enemy.global_position
 	enemies.erase(enemy)
 	enemies_defeated += 1
-	enemy_died.emit("slime", death_position)
-	_spawn_xp_orb(death_position, xp_per_slime)
+	enemy_died.emit(enemy.enemy_type, death_position)
+	_spawn_xp_orb(death_position, enemy.xp_value)
 
 	# Conversao e o coracao do jogo: parte dos inimigos derrotados vira aliado.
 	if enemy.convertible and allies.size() < ally_limit and randf() <= conversion_chance:
-		_convert_enemy(death_position)
+		_convert_enemy(enemy.enemy_type, death_position)
 
 	_update_hud()
 
 
-func _convert_enemy(spawn_position: Vector2) -> void:
+func _convert_enemy(enemy_type: String, spawn_position: Vector2) -> void:
 	# O aliado nasce no ponto da morte para vender visualmente a conversao.
 	var ally: Ally = ALLY_SCENE.instantiate() as Ally
 	ally.global_position = spawn_position
@@ -294,7 +324,7 @@ func _convert_enemy(spawn_position: Vector2) -> void:
 	allies.append(ally)
 	ally.setup(player, self, allies.size() - 1, allies.size())
 	allies_converted += 1
-	enemy_converted.emit("slime", spawn_position)
+	enemy_converted.emit(enemy_type, spawn_position)
 	_refresh_ally_orbits()
 
 
@@ -486,12 +516,18 @@ func _update_debug_info() -> void:
 	if not show_debug_info:
 		return
 
-	debug_label.text = "DEBUG\nEstado: %s\nInimigos vivos: %d/%d\nTocando player: %d\nDano contato: %d a cada %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	var slime_count: int = _count_enemies_by_type("slime")
+	var bat_count: int = _count_enemies_by_type("bat")
+	debug_label.text = "DEBUG\nEstado: %s\nInimigos vivos: %d/%d\nSlimes: %d | Bats: %d\nUltimo spawn: %s\nBats em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
 		"upgrade" if _is_choosing_upgrade else "jogando",
 		enemies.size(),
 		max_enemies,
+		slime_count,
+		bat_count,
+		_last_spawned_enemy_type,
+		maxf(bat_start_time - elapsed_time, 0.0),
 		_touching_enemy_count,
-		contact_damage_per_tick,
+		_last_contact_damage,
 		contact_damage_tick_interval,
 		maxf(_contact_damage_timer, 0.0),
 		spawn_safe_margin,
@@ -501,6 +537,16 @@ func _update_debug_info() -> void:
 		ally_damage_bonus,
 		_last_upgrade_id,
 	]
+
+
+func _count_enemies_by_type(enemy_type: String) -> int:
+	var enemy_count: int = 0
+
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.enemy_type == enemy_type:
+			enemy_count += 1
+
+	return enemy_count
 
 
 func _draw() -> void:

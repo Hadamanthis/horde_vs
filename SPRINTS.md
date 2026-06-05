@@ -48,7 +48,7 @@ Status: concluida em 2026-06-05.
 
 Objetivo: transformar o prototipo em uma partida curta com progressao basica.
 
-Status: em andamento.
+Status: concluida em 2026-06-05.
 
 ### Entregue nesta sprint
 
@@ -71,8 +71,23 @@ Status: em andamento.
 - Dano por contato foi centralizado no `Game`: se houver inimigo encostando, aplica dano fixo por tick.
 - Inimigos ganharam separacao simples para evitar pilhas visualmente perfeitas.
 
+## Sprint 3 - Conteudo e organizacao de inimigos
+
+Objetivo: com o loop base funcionando, comecar a adicionar conteudo pequeno e organizado sem perder legibilidade.
+
+Status: em andamento.
+
+### Entregue nesta sprint
+
+- Criada uma cena concreta para cada inimigo: `Slime.tscn` e `Bat.tscn`.
+- Criado um script base compartilhado para inimigos em `scripts/entities/enemies/enemy.gd`.
+- Cada cena de inimigo guarda seus proprios valores: vida, velocidade, dano de contato, XP, cores e separacao.
+- Slime teve separacao reduzida para evitar espalhamento exagerado.
+- Morcego implementado como segundo inimigo simples: mais rapido, menos vida e cor roxa.
+- Spawn agora escolhe slimes no comeco e passa a misturar morcegos depois de alguns segundos.
+- Debug mostra quantidade de slimes, quantidade de morcegos e ultimo tipo spawnado.
+
 ### Proximas entregas
 
-- Segundo inimigo simples.
 - Tela de derrota com estatisticas.
 - Feedback visual para ataque dos aliados.
