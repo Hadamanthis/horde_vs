@@ -14,15 +14,15 @@ const PROJECTILE_SCENE := preload("res://scenes/Projectile.tscn")
 @export var spawn_interval := 1.15
 @export var initial_enemy_count := 10
 
-@onready var player := $Player
-@onready var entities := $Entities
-@onready var projectiles := $Projectiles
-@onready var stats_label := $HUD/Stats
-@onready var hint_label := $HUD/Hint
-@onready var game_over_label := $HUD/GameOver
+@onready var player: Player = $Player as Player
+@onready var entities: Node2D = $Entities as Node2D
+@onready var projectiles: Node2D = $Projectiles as Node2D
+@onready var stats_label: Label = $HUD/Stats as Label
+@onready var hint_label: Label = $HUD/Hint as Label
+@onready var game_over_label: Label = $HUD/GameOver as Label
 
-var enemies: Array[Node2D] = []
-var allies: Array[Node2D] = []
+var enemies: Array[Enemy] = []
+var allies: Array[Ally] = []
 
 var enemies_defeated := 0
 var allies_converted := 0
@@ -67,8 +67,8 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func get_nearest_enemy(origin: Vector2, max_distance: float) -> Node2D:
-	var nearest_enemy: Node2D = null
+func get_nearest_enemy(origin: Vector2, max_distance: float) -> Enemy:
+	var nearest_enemy: Enemy = null
 	var nearest_distance_sq := max_distance * max_distance
 
 	for enemy in enemies:
@@ -84,8 +84,8 @@ func get_nearest_enemy(origin: Vector2, max_distance: float) -> Node2D:
 
 
 func _spawn_enemy(forced_angle := -1.0) -> void:
-	var enemy := ENEMY_SCENE.instantiate()
-	var angle := forced_angle
+	var enemy: Enemy = ENEMY_SCENE.instantiate() as Enemy
+	var angle: float = forced_angle
 	if angle < 0.0:
 		angle = randf() * TAU
 
@@ -98,17 +98,17 @@ func _spawn_enemy(forced_angle := -1.0) -> void:
 
 
 func _fire_player_projectile() -> void:
-	var target := get_nearest_enemy(player.global_position, player.attack_range)
+	var target: Enemy = get_nearest_enemy(player.global_position, player.attack_range)
 	if not target:
 		return
 
-	var projectile := PROJECTILE_SCENE.instantiate()
+	var projectile: Projectile = PROJECTILE_SCENE.instantiate() as Projectile
 	projectile.setup(player.global_position, target.global_position, player.projectile_damage, self)
 	projectiles.add_child(projectile)
 
 
-func _on_enemy_died(enemy: Node2D) -> void:
-	var death_position := enemy.global_position
+func _on_enemy_died(enemy: Enemy) -> void:
+	var death_position: Vector2 = enemy.global_position
 	enemies.erase(enemy)
 	enemies_defeated += 1
 	enemy_died.emit("slime", death_position)
@@ -120,7 +120,7 @@ func _on_enemy_died(enemy: Node2D) -> void:
 
 
 func _convert_enemy(spawn_position: Vector2) -> void:
-	var ally := ALLY_SCENE.instantiate()
+	var ally: Ally = ALLY_SCENE.instantiate() as Ally
 	ally.global_position = spawn_position
 	entities.add_child(ally)
 	allies.append(ally)
@@ -132,7 +132,7 @@ func _convert_enemy(spawn_position: Vector2) -> void:
 
 func _refresh_ally_orbits() -> void:
 	for index in range(allies.size()):
-		var ally := allies[index]
+		var ally: Ally = allies[index]
 		if is_instance_valid(ally):
 			ally.update_orbit_slot(index, allies.size())
 
@@ -165,25 +165,28 @@ func _update_hud() -> void:
 
 
 func _draw() -> void:
-	var viewport_rect := get_viewport_rect()
-	var camera_center := player.global_position if is_instance_valid(player) else Vector2.ZERO
-	var top_left := camera_center - viewport_rect.size * 0.5
+	var viewport_rect: Rect2 = get_viewport_rect()
+	var camera_center: Vector2 = Vector2.ZERO
+	if is_instance_valid(player):
+		camera_center = player.global_position
+
+	var top_left: Vector2 = camera_center - viewport_rect.size * 0.5
 
 	draw_rect(Rect2(top_left, viewport_rect.size), Color(0.08, 0.09, 0.1), true)
 
-	var grid_color := Color(0.16, 0.18, 0.17, 0.45)
-	var grid_size := 64.0
-	var start_x := floor(top_left.x / grid_size) * grid_size
-	var end_x := top_left.x + viewport_rect.size.x
-	var start_y := floor(top_left.y / grid_size) * grid_size
-	var end_y := top_left.y + viewport_rect.size.y
+	var grid_color: Color = Color(0.16, 0.18, 0.17, 0.45)
+	var grid_size: float = 64.0
+	var start_x: float = floorf(top_left.x / grid_size) * grid_size
+	var end_x: float = top_left.x + viewport_rect.size.x
+	var start_y: float = floorf(top_left.y / grid_size) * grid_size
+	var end_y: float = top_left.y + viewport_rect.size.y
 
-	var x := start_x
+	var x: float = start_x
 	while x <= end_x:
 		draw_line(Vector2(x, top_left.y), Vector2(x, end_y), grid_color, 1.0)
 		x += grid_size
 
-	var y := start_y
+	var y: float = start_y
 	while y <= end_y:
 		draw_line(Vector2(top_left.x, y), Vector2(end_x, y), grid_color, 1.0)
 		y += grid_size

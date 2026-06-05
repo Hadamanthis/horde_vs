@@ -1,4 +1,5 @@
 extends Node2D
+class_name Projectile
 
 @export var speed := 430.0
 @export var hit_radius := 12.0

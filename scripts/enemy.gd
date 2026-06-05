@@ -1,6 +1,7 @@
 extends CharacterBody2D
+class_name Enemy
 
-signal died(enemy: Node)
+signal died(enemy: Enemy)
 
 @export var max_health := 24
 @export var speed := 68.0

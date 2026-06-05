@@ -1,4 +1,5 @@
 extends CharacterBody2D
+class_name Ally
 
 @export var orbit_radius := 58.0
 @export var orbit_speed := 1.45
@@ -39,12 +40,12 @@ func _physics_process(delta: float) -> void:
 	_orbit_time += delta * orbit_speed
 	_attack_timer = max(_attack_timer - delta, 0.0)
 
-	var ring := floor(float(slot_index) / 10.0)
-	var members_in_ring := min(slot_count - int(ring) * 10, 10)
-	var local_index := slot_index - int(ring) * 10
-	var angle_step := TAU / max(float(members_in_ring), 1.0)
-	var angle := local_index * angle_step + _orbit_time + ring * 0.55
-	var desired_position := player.global_position + Vector2.RIGHT.rotated(angle) * (orbit_radius + ring * 28.0)
+	var ring: int = floori(float(slot_index) / 10.0)
+	var members_in_ring: int = min(slot_count - ring * 10, 10)
+	var local_index: int = slot_index - ring * 10
+	var angle_step: float = TAU / max(float(members_in_ring), 1.0)
+	var angle: float = local_index * angle_step + _orbit_time + ring * 0.55
+	var desired_position: Vector2 = player.global_position + Vector2.RIGHT.rotated(angle) * (orbit_radius + ring * 28.0)
 
 	velocity = (desired_position - global_position) * 6.0
 	velocity = velocity.limit_length(move_speed)
