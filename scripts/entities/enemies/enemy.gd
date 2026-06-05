@@ -2,6 +2,7 @@ extends CharacterBody2D
 class_name Enemy
 
 signal died(enemy: Enemy)
+signal projectile_requested(start_position: Vector2, target_position: Vector2, damage: int, projectile_speed: float, projectile_color: Color)
 
 @export var max_health: int = 24
 @export var speed: float = 68.0
@@ -19,6 +20,12 @@ signal died(enemy: Enemy)
 @export var dash_windup_time: float = 0.35
 @export var dash_duration: float = 0.28
 @export var dash_cooldown: float = 1.25
+@export var shoots_projectiles: bool = false
+@export var projectile_damage: int = 5
+@export var projectile_range: float = 260.0
+@export var projectile_interval: float = 1.4
+@export var projectile_speed: float = 250.0
+@export var projectile_color: Color = Color(1.0, 0.55, 0.2)
 @export var outline_color: Color = Color(0.18, 0.02, 0.02)
 @export var body_color: Color = Color(0.9, 0.22, 0.2)
 @export var eye_color: Color = Color(0.08, 0.01, 0.01)
@@ -38,6 +45,7 @@ var _dash_direction: Vector2 = Vector2.ZERO
 var _dash_timer: float = 0.0
 var _dash_cooldown_timer: float = 0.0
 var _dash_windup_timer: float = 0.0
+var _projectile_timer: float = 0.0
 
 
 func setup(target_player: Node2D) -> void:
@@ -59,10 +67,27 @@ func _physics_process(delta: float) -> void:
 	# Cada cena escolhe um modo de movimento simples pelo Inspector.
 	velocity = _get_velocity_for_movement_mode(delta)
 	move_and_slide()
+	_update_projectile_attack(delta)
 
 	if _hit_flash_time > 0.0:
 		_hit_flash_time -= delta
 		_update_visual()
+
+
+func _update_projectile_attack(delta: float) -> void:
+	if not shoots_projectiles:
+		return
+
+	_projectile_timer = maxf(_projectile_timer - delta, 0.0)
+	if _projectile_timer > 0.0:
+		return
+
+	var distance_to_player: float = global_position.distance_to(player.global_position)
+	if distance_to_player > projectile_range:
+		return
+
+	projectile_requested.emit(global_position, player.global_position, projectile_damage, projectile_speed, projectile_color)
+	_projectile_timer = projectile_interval
 
 
 func _get_velocity_for_movement_mode(delta: float) -> Vector2:

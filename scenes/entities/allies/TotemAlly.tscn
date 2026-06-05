@@ -20,6 +20,13 @@ attack_mode = "aura"
 
 [node name="Visual" type="Node2D" parent="."]
 
+[node name="Pulse" type="Node2D" parent="Visual"]
+visible = false
+
+[node name="Ring" type="Polygon2D" parent="Visual/Pulse"]
+color = Color(0.48, 1, 0.82, 0.28)
+polygon = PackedVector2Array(0, -88, 34, -81, 62, -62, 81, -34, 88, 0, 81, 34, 62, 62, 34, 81, 0, 88, -34, 81, -62, 62, -81, 34, -88, 0, -81, -34, -62, -62, -34, -81)
+
 [node name="Outline" type="Polygon2D" parent="Visual"]
 color = Color(0.03, 0.1, 0.09, 1)
 polygon = PackedVector2Array(-9, -15, 9, -15, 13, -7, 9, 15, -9, 15, -13, -7)

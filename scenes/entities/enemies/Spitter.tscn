@@ -1,0 +1,53 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_spitter"]
+radius = 9.0
+
+[node name="Spitter" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_enemy")
+max_health = 20
+speed = 52.0
+contact_damage = 3
+contact_range = 21.0
+enemy_type = "spitter"
+xp_value = 2
+movement_mode = "skirmisher"
+preferred_distance = 190.0
+separation_radius = 28.0
+separation_force = 0.6
+shoots_projectiles = true
+projectile_damage = 7
+projectile_range = 310.0
+projectile_interval = 1.35
+projectile_speed = 250.0
+projectile_color = Color(1, 0.52, 0.22, 1)
+outline_color = Color(0.18, 0.07, 0.02, 1)
+body_color = Color(1, 0.62, 0.24, 1)
+eye_color = Color(0.05, 0.02, 0.01, 1)
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+color = Color(0.18, 0.07, 0.02, 1)
+polygon = PackedVector2Array(0, -13, 10, -5, 12, 7, 0, 13, -12, 7, -10, -5)
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.62, 0.24, 1)
+polygon = PackedVector2Array(0, -9, 7, -3, 8, 5, 0, 9, -8, 5, -7, -3)
+
+[node name="LeftEye" type="Polygon2D" parent="Visual"]
+color = Color(0.05, 0.02, 0.01, 1)
+position = Vector2(-3, -2)
+polygon = PackedVector2Array(0, -1.6, 1.6, 0, 0, 1.6, -1.6, 0)
+
+[node name="RightEye" type="Polygon2D" parent="Visual"]
+color = Color(0.05, 0.02, 0.01, 1)
+position = Vector2(3, -2)
+polygon = PackedVector2Array(0, -1.6, 1.6, 0, 0, 1.6, -1.6, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_spitter")

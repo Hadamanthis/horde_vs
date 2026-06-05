@@ -373,6 +373,11 @@ Status: em andamento.
 - `BoarAlly` ganhou cooldown minimo maior depois da investida.
 - `BatAlly` ganhou comportamento de cacador rapido: sai da orbita para morder alvos proximos e retorna.
 - `Game` ganhou `enabled_enemy_types` para testar tipos especificos de inimigos pela cena.
+- `BatAlly` agora mantem a cacada por uma janela curta mesmo se sair da area do jogador.
+- `TotemAlly` ganhou feedback visual de pulso para deixar a area de ataque legivel.
+- Novo inimigo `Spitter`: mantem distancia e atira projeteis simples no jogador.
+- Novo aliado `SpitterAlly`: fica na formacao e dispara projeteis contra inimigos.
+- Projetil foi generalizado para acertar inimigos ou jogador conforme o tipo de alvo.
 
 ### Decisao de direcao
 
@@ -382,6 +387,7 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 - bat: cacador rapido que sai e volta da formacao;
 - boar: investida em linha;
 - totem: area/pulso.
+- spitter: atirador de retaguarda.
 
 ### Ideias propostas
 
@@ -394,6 +400,7 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 - Indicador simples de composicao atual no debug antes de virar HUD definitivo.
 - Pequenas escolhas de upgrade que interagem com tipos de aliados.
 - Melhorar o `TotemAlly` com feedback visual de pulso e talvez um efeito de protecao/area.
+- Repensar o slime para ser mais do que melee basico, possivelmente com empurrao, lentidao, grude ou bonus por quantidade.
 
 ### Validacao
 

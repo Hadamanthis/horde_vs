@@ -19,6 +19,7 @@ ally_type = "bat"
 attack_mode = "pursuit"
 attack_command_radius = 150.0
 pursuit_hit_radius = 22.0
+pursuit_duration = 1.05
 
 [node name="Visual" type="Node2D" parent="."]
 

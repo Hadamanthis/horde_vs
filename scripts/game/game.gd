@@ -12,17 +12,19 @@ const SLIME_SCENE: PackedScene = preload("res://scenes/entities/enemies/Slime.ts
 const BAT_SCENE: PackedScene = preload("res://scenes/entities/enemies/Bat.tscn")
 const BOAR_SCENE: PackedScene = preload("res://scenes/entities/enemies/Boar.tscn")
 const TOTEM_SCENE: PackedScene = preload("res://scenes/entities/enemies/Totem.tscn")
+const SPITTER_SCENE: PackedScene = preload("res://scenes/entities/enemies/Spitter.tscn")
 const SLIME_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/SlimeAlly.tscn")
 const BAT_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BatAlly.tscn")
 const BOAR_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/BoarAlly.tscn")
 const TOTEM_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/TotemAlly.tscn")
+const SPITTER_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/SpitterAlly.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
 const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingText.tscn")
 
 @export var conversion_chance: float = 0.2
 @export var ally_limit: int = 5
-@export var enabled_enemy_types: Array[String] = ["slime", "bat", "boar", "totem"]
+@export var enabled_enemy_types: Array[String] = ["slime", "bat", "boar", "totem", "spitter"]
 @export var max_enemies: int = 42
 @export var spawn_interval: float = 1.15
 @export var match_duration: float = 300.0
@@ -35,6 +37,8 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingT
 @export var boar_spawn_weight: float = 0.22
 @export var totem_start_time: float = 105.0
 @export var totem_spawn_weight: float = 0.12
+@export var spitter_start_time: float = 80.0
+@export var spitter_spawn_weight: float = 0.16
 @export var spawn_safe_margin: float = 160.0
 @export var contact_damage_tick_interval: float = 0.5
 @export var show_debug_info: bool = false
@@ -278,6 +282,7 @@ func _spawn_enemy(forced_angle: float = -1.0, enemy_scene: PackedScene = null) -
 	enemy.global_position = _get_spawn_position_outside_camera(forced_angle)
 	enemy.setup(player)
 	enemy.died.connect(_on_enemy_died)
+	enemy.projectile_requested.connect(_on_enemy_projectile_requested)
 	entities.add_child(enemy)
 	enemies.append(enemy)
 	_last_spawned_enemy_type = enemy.enemy_type
@@ -307,6 +312,11 @@ func _choose_enemy_scene() -> PackedScene:
 			"scene": TOTEM_SCENE,
 			"weight": totem_spawn_weight,
 		})
+	if _can_spawn_timed_enemy_type("spitter", spitter_start_time):
+		spawn_table.append({
+			"scene": SPITTER_SCENE,
+			"weight": spitter_spawn_weight,
+		})
 
 	if spawn_table.is_empty():
 		return _get_initial_enemy_scene()
@@ -322,6 +332,8 @@ func _get_initial_enemy_scene() -> PackedScene:
 		return BOAR_SCENE
 	if _is_only_enabled_enemy_type("totem"):
 		return TOTEM_SCENE
+	if _is_only_enabled_enemy_type("spitter"):
+		return SPITTER_SCENE
 	if _is_enemy_type_enabled("slime"):
 		return SLIME_SCENE
 	if _is_enemy_type_enabled("bat"):
@@ -330,6 +342,8 @@ func _get_initial_enemy_scene() -> PackedScene:
 		return BOAR_SCENE
 	if _is_enemy_type_enabled("totem"):
 		return TOTEM_SCENE
+	if _is_enemy_type_enabled("spitter"):
+		return SPITTER_SCENE
 
 	return SLIME_SCENE
 
@@ -395,6 +409,46 @@ func _fire_player_projectile() -> void:
 	var projectile: Projectile = PROJECTILE_SCENE.instantiate() as Projectile
 	projectile.setup(player.global_position, target.global_position, player.projectile_damage, self)
 	projectiles.add_child(projectile)
+
+
+func spawn_ally_projectile(start_position: Vector2, target_position: Vector2, damage: int, projectile_speed: float, projectile_color: Color) -> void:
+	_spawn_projectile(start_position, target_position, damage, "enemies", projectile_speed, projectile_color)
+
+
+func _on_enemy_projectile_requested(
+	start_position: Vector2,
+	target_position: Vector2,
+	damage: int,
+	projectile_speed: float,
+	projectile_color: Color
+) -> void:
+	if _game_is_over:
+		return
+
+	_spawn_projectile(start_position, target_position, damage, "player", projectile_speed, projectile_color)
+
+
+func _spawn_projectile(
+	start_position: Vector2,
+	target_position: Vector2,
+	damage: int,
+	target_group: String,
+	projectile_speed: float,
+	projectile_color: Color
+) -> void:
+	var projectile: Projectile = PROJECTILE_SCENE.instantiate() as Projectile
+	projectile.setup(start_position, target_position, damage, self, target_group, projectile_speed, projectile_color)
+	projectiles.add_child(projectile)
+
+
+func get_player_if_in_range(origin: Vector2, max_distance: float) -> Player:
+	if not is_instance_valid(player):
+		return null
+
+	if origin.distance_to(player.global_position) <= max_distance:
+		return player
+
+	return null
 
 
 func _update_contact_damage() -> void:
@@ -494,6 +548,8 @@ func _get_ally_scene_for_enemy_type(enemy_type: String) -> PackedScene:
 			return BOAR_ALLY_SCENE
 		"totem":
 			return TOTEM_ALLY_SCENE
+		"spitter":
+			return SPITTER_ALLY_SCENE
 		"bat":
 			return BAT_ALLY_SCENE
 		_:
@@ -737,11 +793,13 @@ func _update_debug_info() -> void:
 	var bat_count: int = _count_enemies_by_type("bat")
 	var boar_count: int = _count_enemies_by_type("boar")
 	var totem_count: int = _count_enemies_by_type("totem")
+	var spitter_count: int = _count_enemies_by_type("spitter")
 	var slime_ally_count: int = _count_allies_by_type("slime")
 	var bat_ally_count: int = _count_allies_by_type("bat")
 	var boar_ally_count: int = _count_allies_by_type("boar")
 	var totem_ally_count: int = _count_allies_by_type("totem")
-	debug_label.text = "DEBUG\nEstado: %s\nAtivos: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nSlime:%d Bat:%d Boar:%d Totem:%d\nAliados S:%d B:%d J:%d T:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	var spitter_ally_count: int = _count_allies_by_type("spitter")
+	debug_label.text = "DEBUG\nEstado: %s\nAtivos: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nS:%d B:%d J:%d T:%d A:%d\nAliados S:%d B:%d J:%d T:%d A:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nAtirador em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
 		_get_debug_state_name(),
 		_format_enabled_enemy_types(),
 		_difficulty_progress * 100.0,
@@ -753,14 +811,17 @@ func _update_debug_info() -> void:
 		bat_count,
 		boar_count,
 		totem_count,
+		spitter_count,
 		slime_ally_count,
 		bat_ally_count,
 		boar_ally_count,
 		totem_ally_count,
+		spitter_ally_count,
 		_last_spawned_enemy_type,
 		_last_converted_enemy_type,
 		maxf(bat_start_time - elapsed_time, 0.0),
 		maxf(boar_start_time - elapsed_time, 0.0),
+		maxf(spitter_start_time - elapsed_time, 0.0),
 		maxf(totem_start_time - elapsed_time, 0.0),
 		_touching_enemy_count,
 		_last_contact_damage,

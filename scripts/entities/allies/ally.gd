@@ -11,6 +11,9 @@ class_name Ally
 @export var attack_mode: String = "melee"
 @export var attack_command_radius: float = 9999.0
 @export var pursuit_hit_radius: float = 24.0
+@export var pursuit_duration: float = 0.9
+@export var projectile_speed: float = 360.0
+@export var projectile_color: Color = Color(0.58, 1.0, 0.95)
 @export var attack_dash_speed: float = 360.0
 @export var attack_dash_windup_time: float = 0.18
 @export var attack_dash_duration: float = 0.24
@@ -31,6 +34,8 @@ var _dash_windup_timer: float = 0.0
 var _dash_timer: float = 0.0
 var _dash_direction: Vector2 = Vector2.ZERO
 var _dash_hit_enemies: Array[Enemy] = []
+var _pursuit_target: Enemy = null
+var _pursuit_timer: float = 0.0
 
 
 func setup(target_player: Node2D, game_node: Node, index: int, count: int) -> void:
@@ -64,10 +69,15 @@ func _physics_process(delta: float) -> void:
 		_process_dash(delta)
 		return
 
+	if is_instance_valid(_pursuit_target):
+		_process_pursuit_attack(delta)
+		return
+
 	if attack_mode == "pursuit" and _attack_timer == 0.0 and _is_inside_command_radius():
 		var pursuit_enemy: Enemy = _find_nearest_enemy()
 		if pursuit_enemy:
-			_process_pursuit_attack(pursuit_enemy, delta)
+			_begin_pursuit_attack(pursuit_enemy)
+			_process_pursuit_attack(delta)
 			return
 
 	# A orbita evita IA complexa e deixa a horda facil de ler ao redor do jogador.
@@ -112,19 +122,41 @@ func _process_dash(delta: float) -> void:
 		_attack_timer = attack_interval
 
 
-func _process_pursuit_attack(enemy: Enemy, delta: float) -> void:
+func _begin_pursuit_attack(enemy: Enemy) -> void:
+	_pursuit_target = enemy
+	_pursuit_timer = pursuit_duration
+
+
+func _process_pursuit_attack(delta: float) -> void:
 	# O bat aliado preserva a fantasia de criatura rapida: sai da orbita, morde e volta.
-	var to_enemy: Vector2 = enemy.global_position - global_position
+	if not is_instance_valid(_pursuit_target):
+		_end_pursuit_attack(true)
+		return
+
+	_pursuit_timer = maxf(_pursuit_timer - delta, 0.0)
+	if _pursuit_timer == 0.0:
+		_end_pursuit_attack(true)
+		return
+
+	var to_enemy: Vector2 = _pursuit_target.global_position - global_position
 	if to_enemy.length() <= pursuit_hit_radius:
-		enemy.take_damage(attack_damage)
-		_spawn_damage_feedback(enemy.global_position)
-		_start_attack_cooldown()
+		_pursuit_target.take_damage(attack_damage)
+		_spawn_damage_feedback(_pursuit_target.global_position)
+		_end_pursuit_attack(false)
 		_update_attack_feedback(delta)
 		return
 
 	velocity = to_enemy.normalized() * move_speed
 	move_and_slide()
 	visual.scale = Vector2.ONE * 1.12
+
+
+func _end_pursuit_attack(use_short_cooldown: bool) -> void:
+	_pursuit_target = null
+	if use_short_cooldown:
+		_attack_timer = attack_interval * 0.45
+	else:
+		_start_attack_cooldown()
 
 
 func _update_attack_feedback(delta: float) -> void:
@@ -153,6 +185,8 @@ func _try_attack() -> void:
 			_try_single_target_attack(true)
 		"pursuit":
 			return
+		"shooter":
+			_try_projectile_attack()
 		_:
 			_try_single_target_attack(false)
 
@@ -188,7 +222,42 @@ func _try_aura_attack() -> void:
 			hit_any_enemy = true
 
 	if hit_any_enemy:
+		_show_pulse_feedback()
 		_start_attack_cooldown()
+
+
+func _try_projectile_attack() -> void:
+	# Atiradores aliados mantem a formacao e contribuem de longe.
+	var enemy: Enemy = _find_nearest_enemy()
+	if not enemy or global_position.distance_to(enemy.global_position) > attack_range:
+		return
+
+	if is_instance_valid(game) and game.has_method("spawn_ally_projectile"):
+		game.call("spawn_ally_projectile", global_position, enemy.global_position, attack_damage, projectile_speed, projectile_color)
+	_start_attack_cooldown()
+
+
+func _show_pulse_feedback() -> void:
+	var pulse_node: Node2D = get_node_or_null("Visual/Pulse") as Node2D
+	if not pulse_node:
+		return
+
+	pulse_node.visible = true
+	pulse_node.scale = Vector2.ONE * 1.35
+
+	var tween: Tween = create_tween()
+	tween.tween_property(pulse_node, "scale", Vector2.ONE * 0.2, attack_flash_time)
+	tween.parallel().tween_property(pulse_node, "modulate:a", 0.0, attack_flash_time)
+	tween.tween_callback(_hide_pulse_feedback.bind(pulse_node))
+
+
+func _hide_pulse_feedback(pulse_node: Node2D) -> void:
+	if not is_instance_valid(pulse_node):
+		return
+
+	pulse_node.visible = false
+	pulse_node.modulate.a = 1.0
+	pulse_node.scale = Vector2.ONE
 
 
 func _begin_dash_attack(enemy: Enemy) -> void:
