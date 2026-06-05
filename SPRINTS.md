@@ -362,7 +362,22 @@ Status: concluida em 2026-06-05.
 
 Objetivo: fazer o jogador se importar com quais criaturas converteu.
 
-Status: planejada.
+Status: em andamento.
+
+### Entregue ate agora
+
+- Investida do `Boar` inimigo ficou mais longa e mais facil de perceber.
+- `BoarAlly` deixou de ser um teleporte curto e passou a preparar e investir como criatura propria.
+- Modo `dash` dos aliados agora tem windup, duracao, velocidade e raio de acerto configuraveis.
+
+### Decisao de direcao
+
+O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo aliado ser uma bolinha orbitando com dano parecido, cada tipo deve manter um comportamento reconhecivel:
+
+- slime: unidade simples de corpo a corpo;
+- bat: atacante rapido;
+- boar: investida em linha;
+- totem: area/pulso.
 
 ### Ideias propostas
 

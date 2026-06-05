@@ -9,7 +9,10 @@ class_name Ally
 @export var attack_interval: float = 0.45
 @export var ally_type: String = "slime"
 @export var attack_mode: String = "melee"
-@export var attack_lunge_distance: float = 0.0
+@export var attack_dash_speed: float = 360.0
+@export var attack_dash_windup_time: float = 0.18
+@export var attack_dash_duration: float = 0.24
+@export var attack_dash_hit_radius: float = 24.0
 @export var attack_flash_time: float = 0.12
 
 @onready var visual: Node2D = $Visual as Node2D
@@ -22,6 +25,10 @@ var slot_count: int = 1
 var _attack_timer: float = 0.0
 var _attack_flash_timer: float = 0.0
 var _orbit_time: float = 0.0
+var _dash_windup_timer: float = 0.0
+var _dash_timer: float = 0.0
+var _dash_direction: Vector2 = Vector2.ZERO
+var _dash_hit_enemies: Array[Enemy] = []
 
 
 func setup(target_player: Node2D, game_node: Node, index: int, count: int) -> void:
@@ -47,6 +54,14 @@ func _physics_process(delta: float) -> void:
 	_orbit_time += delta * orbit_speed
 	_attack_timer = maxf(_attack_timer - delta, 0.0)
 
+	if _dash_windup_timer > 0.0:
+		_process_dash_windup(delta)
+		return
+
+	if _dash_timer > 0.0:
+		_process_dash(delta)
+		return
+
 	# A orbita evita IA complexa e deixa a horda facil de ler ao redor do jogador.
 	var ring: int = floori(float(slot_index) / 10.0)
 	var members_in_ring: int = mini(slot_count - ring * 10, 10)
@@ -62,6 +77,33 @@ func _physics_process(delta: float) -> void:
 	if _attack_timer == 0.0:
 		_try_attack()
 
+	_update_attack_feedback(delta)
+
+
+func _process_dash_windup(delta: float) -> void:
+	# O windup cria antecipacao visual: o aliado vai atacar, mas ainda nao causou dano.
+	_dash_windup_timer = maxf(_dash_windup_timer - delta, 0.0)
+	velocity = Vector2.ZERO
+	move_and_slide()
+	visual.scale = Vector2.ONE * 1.15
+
+	if _dash_windup_timer == 0.0:
+		_dash_timer = attack_dash_duration
+
+
+func _process_dash(delta: float) -> void:
+	# Durante a investida, o aliado atravessa o campo e acerta tudo perto do caminho.
+	_dash_timer = maxf(_dash_timer - delta, 0.0)
+	velocity = _dash_direction * attack_dash_speed
+	move_and_slide()
+	_damage_enemies_during_dash()
+	visual.scale = Vector2.ONE * 1.32
+
+	if _dash_timer == 0.0:
+		_dash_hit_enemies.clear()
+
+
+func _update_attack_feedback(delta: float) -> void:
 	if _attack_flash_timer > 0.0:
 		_attack_flash_timer = maxf(_attack_flash_timer - delta, 0.0)
 		visual.scale = Vector2.ONE * 1.25
@@ -92,9 +134,11 @@ func _try_single_target_attack(should_lunge: bool) -> void:
 	if not enemy or global_position.distance_to(enemy.global_position) > attack_range:
 		return
 
+	if should_lunge:
+		_begin_dash_attack(enemy)
+		return
+
 	enemy.take_damage(attack_damage)
-	if should_lunge and attack_lunge_distance > 0.0:
-		global_position = global_position.move_toward(enemy.global_position, attack_lunge_distance)
 	_spawn_damage_feedback(enemy.global_position)
 	_start_attack_cooldown()
 
@@ -116,6 +160,31 @@ func _try_aura_attack() -> void:
 
 	if hit_any_enemy:
 		_start_attack_cooldown()
+
+
+func _begin_dash_attack(enemy: Enemy) -> void:
+	# O javali aliado herda a personalidade de inimigo: mira, prepara e investe.
+	_dash_direction = (enemy.global_position - global_position).normalized()
+	if _dash_direction == Vector2.ZERO:
+		_dash_direction = Vector2.RIGHT
+
+	_dash_hit_enemies.clear()
+	_dash_windup_timer = attack_dash_windup_time
+	_start_attack_cooldown()
+
+
+func _damage_enemies_during_dash() -> void:
+	var nearby_nodes: Array[Node] = get_tree().get_nodes_in_group("enemies")
+
+	for nearby_node in nearby_nodes:
+		var enemy: Enemy = nearby_node as Enemy
+		if not is_instance_valid(enemy) or _dash_hit_enemies.has(enemy):
+			continue
+
+		if global_position.distance_to(enemy.global_position) <= attack_dash_hit_radius:
+			enemy.take_damage(attack_damage)
+			_dash_hit_enemies.append(enemy)
+			_spawn_damage_feedback(enemy.global_position)
 
 
 func _spawn_damage_feedback(world_position: Vector2) -> void:

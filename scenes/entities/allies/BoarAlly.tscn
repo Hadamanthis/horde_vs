@@ -13,11 +13,14 @@ orbit_radius = 76.0
 orbit_speed = 1.15
 move_speed = 290.0
 attack_damage = 13
-attack_range = 62.0
-attack_interval = 0.82
+attack_range = 120.0
+attack_interval = 1.05
 ally_type = "boar"
 attack_mode = "dash"
-attack_lunge_distance = 28.0
+attack_dash_speed = 500.0
+attack_dash_windup_time = 0.2
+attack_dash_duration = 0.38
+attack_dash_hit_radius = 26.0
 
 [node name="Visual" type="Node2D" parent="."]
 
