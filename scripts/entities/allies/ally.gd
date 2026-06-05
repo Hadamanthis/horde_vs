@@ -18,6 +18,10 @@ class_name Ally
 @export var attack_dash_windup_time: float = 0.18
 @export var attack_dash_duration: float = 0.24
 @export var attack_dash_hit_radius: float = 24.0
+@export var stationary_duration: float = 4.0
+@export var stationary_cooldown: float = 3.5
+@export var stationary_min_distance: float = 120.0
+@export var stationary_max_distance: float = 190.0
 @export var attack_flash_time: float = 0.12
 
 @onready var visual: Node2D = $Visual as Node2D
@@ -36,6 +40,9 @@ var _dash_direction: Vector2 = Vector2.ZERO
 var _dash_hit_enemies: Array[Enemy] = []
 var _pursuit_target: Enemy = null
 var _pursuit_timer: float = 0.0
+var _stationary_is_active: bool = false
+var _stationary_duration_timer: float = 0.0
+var _stationary_cooldown_timer: float = 0.0
 
 
 func setup(target_player: Node2D, game_node: Node, index: int, count: int) -> void:
@@ -52,6 +59,9 @@ func update_orbit_slot(index: int, count: int) -> void:
 
 func _ready() -> void:
 	add_to_group("allies")
+	if attack_mode == "stationary_aura":
+		visible = false
+		_stationary_cooldown_timer = 0.0
 
 
 func _physics_process(delta: float) -> void:
@@ -60,6 +70,10 @@ func _physics_process(delta: float) -> void:
 
 	_orbit_time += delta * orbit_speed
 	_attack_timer = maxf(_attack_timer - delta, 0.0)
+
+	if attack_mode == "stationary_aura":
+		_process_stationary_aura(delta)
+		return
 
 	if _dash_windup_timer > 0.0:
 		_process_dash_windup(delta)
@@ -96,6 +110,44 @@ func _physics_process(delta: float) -> void:
 		_try_attack()
 
 	_update_attack_feedback(delta)
+
+
+func _process_stationary_aura(delta: float) -> void:
+	# Totens convertidos viram uma peca de territorio: aparecem, pulsam e somem.
+	if not _stationary_is_active:
+		_stationary_cooldown_timer = maxf(_stationary_cooldown_timer - delta, 0.0)
+		if _stationary_cooldown_timer == 0.0:
+			_deploy_stationary_aura()
+		return
+
+	_stationary_duration_timer = maxf(_stationary_duration_timer - delta, 0.0)
+	velocity = Vector2.ZERO
+	move_and_slide()
+
+	if _attack_timer == 0.0:
+		_try_aura_attack()
+
+	_update_attack_feedback(delta)
+
+	if _stationary_duration_timer == 0.0:
+		_recall_stationary_aura()
+
+
+func _deploy_stationary_aura() -> void:
+	var angle: float = randf() * TAU
+	var distance: float = randf_range(stationary_min_distance, stationary_max_distance)
+	global_position = player.global_position + Vector2.RIGHT.rotated(angle) * distance
+	_stationary_is_active = true
+	_stationary_duration_timer = stationary_duration
+	_attack_timer = 0.0
+	visible = true
+	set_physics_process(true)
+
+
+func _recall_stationary_aura() -> void:
+	_stationary_is_active = false
+	_stationary_cooldown_timer = stationary_cooldown
+	visible = false
 
 
 func _process_dash_windup(delta: float) -> void:

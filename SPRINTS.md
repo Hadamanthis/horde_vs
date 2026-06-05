@@ -378,15 +378,19 @@ Status: em andamento.
 - Novo inimigo `Spitter`: mantem distancia e atira projeteis simples no jogador.
 - Novo aliado `SpitterAlly`: fica na formacao e dispara projeteis contra inimigos.
 - Projetil foi generalizado para acertar inimigos ou jogador conforme o tipo de alvo.
+- `TotemAlly` virou uma invocacao temporaria: aparece parado ao redor do jogador, pulsa por duracao configuravel, some e entra em cooldown.
+- `Totem` inimigo agora dispara projeteis para ter ataque visivel.
+- `SlimeAlly` ganhou comportamento de cacador de curto alcance, parecido com o bat mas com raio menor.
+- `BatAlly` ganhou raio maior e cooldown mais alto para agir como criatura voadora mais independente.
 
 ### Decisao de direcao
 
 O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo aliado ser uma bolinha orbitando com dano parecido, cada tipo deve manter um comportamento reconhecivel:
 
-- slime: unidade simples de corpo a corpo;
+- slime: cacador de curto alcance;
 - bat: cacador rapido que sai e volta da formacao;
 - boar: investida em linha;
-- totem: area/pulso.
+- totem: invocacao estacionaria temporaria com area/pulso.
 - spitter: atirador de retaguarda.
 
 ### Ideias propostas
@@ -399,7 +403,6 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 - Limite por tipo ou custo de slots para criaturas fortes.
 - Indicador simples de composicao atual no debug antes de virar HUD definitivo.
 - Pequenas escolhas de upgrade que interagem com tipos de aliados.
-- Melhorar o `TotemAlly` com feedback visual de pulso e talvez um efeito de protecao/area.
 - Repensar o slime para ser mais do que melee basico, possivelmente com empurrao, lentidao, grude ou bonus por quantidade.
 
 ### Validacao

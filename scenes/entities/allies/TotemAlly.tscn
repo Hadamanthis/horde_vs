@@ -14,9 +14,13 @@ orbit_speed = 0.85
 move_speed = 220.0
 attack_damage = 4
 attack_range = 88.0
-attack_interval = 1.05
+attack_interval = 0.9
 ally_type = "totem"
-attack_mode = "aura"
+attack_mode = "stationary_aura"
+stationary_duration = 4.5
+stationary_cooldown = 3.2
+stationary_min_distance = 120.0
+stationary_max_distance = 190.0
 
 [node name="Visual" type="Node2D" parent="."]
 

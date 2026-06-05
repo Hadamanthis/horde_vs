@@ -13,9 +13,13 @@ orbit_radius = 58.0
 orbit_speed = 1.45
 move_speed = 260.0
 attack_damage = 6
-attack_range = 34.0
-attack_interval = 0.45
+attack_range = 74.0
+attack_interval = 0.95
 ally_type = "slime"
+attack_mode = "pursuit"
+attack_command_radius = 92.0
+pursuit_hit_radius = 20.0
+pursuit_duration = 0.65
 
 [node name="Visual" type="Node2D" parent="."]
 
