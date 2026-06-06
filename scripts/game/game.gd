@@ -148,6 +148,7 @@ var _debug_toggle_was_down: bool = false
 var _difficulty_progress: float = 0.0
 var _current_spawn_interval: float = 1.15
 var _current_max_enemies: int = 42
+var _trail_damage_cooldowns: Dictionary = {}
 
 
 func _ready() -> void:
@@ -211,6 +212,7 @@ func _process(delta: float) -> void:
 	_spawn_timer -= delta
 	_attack_timer -= delta
 	_contact_damage_timer -= delta
+	_update_trail_damage_cooldowns(delta)
 	_level_notice_timer = maxf(_level_notice_timer - delta, 0.0)
 	level_up_label.visible = _level_notice_timer > 0.0
 	_update_contact_damage()
@@ -273,6 +275,8 @@ func get_nearest_enemy(origin: Vector2, max_distance: float) -> Enemy:
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
 			continue
+		if not enemy.can_be_targeted():
+			continue
 
 		var distance_sq: float = origin.distance_squared_to(enemy.global_position)
 		if distance_sq <= nearest_distance_sq:
@@ -288,7 +292,10 @@ func _spawn_enemy(forced_angle: float = -1.0, enemy_scene: PackedScene = null) -
 		scene_to_spawn = _choose_enemy_scene()
 
 	var enemy: Enemy = scene_to_spawn.instantiate() as Enemy
-	enemy.global_position = _get_spawn_position_outside_camera(forced_angle)
+	if enemy.enemy_type == "totem":
+		enemy.global_position = _get_totem_spawn_position_near_player()
+	else:
+		enemy.global_position = _get_spawn_position_outside_camera(forced_angle)
 	enemy.setup(player)
 	enemy.died.connect(_on_enemy_died)
 	enemy.projectile_requested.connect(_on_enemy_projectile_requested)
@@ -429,6 +436,21 @@ func _get_spawn_position_outside_camera(forced_angle: float = -1.0) -> Vector2:
 	return center + direction * (edge_distance + extra_distance)
 
 
+func _get_totem_spawn_position_near_player() -> Vector2:
+	# Totem pressiona o jogador: anuncia uma regiao proxima, mas com variacao para nao parecer injusto.
+	var visible_rect: Rect2 = _get_camera_world_rect()
+	var margin: float = 96.0
+	var spawn_area: Rect2 = visible_rect.grow(-margin)
+	var angle: float = randf() * TAU
+	var distance: float = randf_range(96.0, 210.0)
+	var desired_position: Vector2 = player.global_position + Vector2.RIGHT.rotated(angle) * distance
+
+	return Vector2(
+		clampf(desired_position.x, spawn_area.position.x, spawn_area.position.x + spawn_area.size.x),
+		clampf(desired_position.y, spawn_area.position.y, spawn_area.position.y + spawn_area.size.y)
+	)
+
+
 func _fire_player_projectile() -> void:
 	# MVP sem mira manual: o alvo e sempre o inimigo mais proximo dentro do alcance.
 	var target: Enemy = get_nearest_enemy(player.global_position, player.attack_range)
@@ -481,6 +503,29 @@ func _on_enemy_area_attack_used(target_position: Vector2, damage: int) -> void:
 
 func spawn_ally_trail(spawn_position: Vector2, damage: int, radius: float, duration: float, tick_interval: float, color: Color) -> void:
 	_spawn_trail_zone(spawn_position, "enemies", damage, radius, duration, tick_interval, color)
+
+
+func can_apply_trail_damage(target: Node2D, target_group: String, cooldown: float) -> bool:
+	var cooldown_key: String = "%s:%d" % [target_group, target.get_instance_id()]
+	if _trail_damage_cooldowns.has(cooldown_key):
+		return false
+
+	_trail_damage_cooldowns[cooldown_key] = cooldown
+	return true
+
+
+func _update_trail_damage_cooldowns(delta: float) -> void:
+	var expired_keys: Array[String] = []
+
+	for key in _trail_damage_cooldowns.keys():
+		var remaining_time: float = float(_trail_damage_cooldowns[key]) - delta
+		if remaining_time <= 0.0:
+			expired_keys.append(String(key))
+		else:
+			_trail_damage_cooldowns[key] = remaining_time
+
+	for key in expired_keys:
+		_trail_damage_cooldowns.erase(key)
 
 
 func _spawn_trail_zone(
@@ -545,6 +590,10 @@ func _update_contact_damage() -> void:
 
 	if _contact_damage_timer <= 0.0:
 		_last_contact_damage = _get_touching_enemy_damage()
+		if _last_contact_damage <= 0:
+			_contact_damage_timer = contact_damage_tick_interval
+			return
+
 		player.take_damage(_last_contact_damage)
 		spawn_damage_feedback(_last_contact_damage, player.global_position, Color(1.0, 0.38, 0.3))
 		_contact_damage_timer = contact_damage_tick_interval
@@ -555,6 +604,10 @@ func _count_touching_enemies() -> int:
 
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
+			continue
+		if not enemy.can_be_targeted():
+			continue
+		if enemy.contact_damage <= 0:
 			continue
 
 		var distance: float = player.global_position.distance_to(enemy.global_position)
@@ -570,6 +623,8 @@ func _get_touching_enemy_damage() -> int:
 
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
+			continue
+		if not enemy.can_be_targeted():
 			continue
 
 		var distance: float = player.global_position.distance_to(enemy.global_position)

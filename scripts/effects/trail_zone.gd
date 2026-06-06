@@ -65,6 +65,9 @@ func _apply_tick_damage() -> void:
 	if target_group == "player":
 		var player: Player = game.call("get_player_if_in_range", global_position, radius) as Player
 		if player:
+			if game.has_method("can_apply_trail_damage") and not bool(game.call("can_apply_trail_damage", player, target_group, tick_interval)):
+				return
+
 			player.take_damage(damage)
 			_emit_feedback(damage, player.global_position, Color(1.0, 0.38, 0.3))
 		return
@@ -76,6 +79,8 @@ func _apply_tick_damage() -> void:
 			continue
 
 		if global_position.distance_to(enemy.global_position) > radius:
+			continue
+		if game.has_method("can_apply_trail_damage") and not bool(game.call("can_apply_trail_damage", enemy, target_group, tick_interval)):
 			continue
 
 		var actual_damage: int = enemy.take_damage(damage, "area")

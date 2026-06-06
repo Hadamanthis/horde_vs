@@ -45,7 +45,9 @@ func _process(delta: float) -> void:
 			target.call("take_damage", damage)
 		else:
 			actual_damage = int(target.call("take_damage", damage, attack_type))
-		if game.has_method("spawn_damage_feedback"):
+		if actual_damage <= 0 and game.has_method("spawn_status_feedback"):
+			game.call("spawn_status_feedback", "Bloqueio", target.global_position, Color(0.62, 0.86, 1.0))
+		elif game.has_method("spawn_damage_feedback"):
 			game.call("spawn_damage_feedback", actual_damage, target.global_position, _get_feedback_color())
 		queue_free()
 		return

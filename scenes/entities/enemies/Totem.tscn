@@ -10,31 +10,57 @@ collision_layer = 0
 collision_mask = 0
 script = ExtResource("1_enemy")
 max_health = 62
-speed = 34.0
-contact_damage = 4
-contact_range = 28.0
+speed = 0.0
+contact_damage = 0
+contact_range = 0.0
 enemy_type = "totem"
 xp_value = 4
-movement_mode = "skirmisher"
+movement_mode = "stationary"
 preferred_distance = 150.0
 separation_radius = 34.0
 separation_force = 0.75
 uses_area_attack = true
 area_damage = 6
-area_range = 92.0
-area_interval = 1.7
+area_range = 108.0
+area_interval = 2.2
+area_windup_time = 0.0
+area_target_mode = "self"
+area_feedback_color = Color(0.48, 1, 0.82, 0.5)
+area_warning_color = Color(1, 0.78, 0.18, 0.82)
+area_aura_color = Color(0.14, 0.88, 0.72, 0.28)
+keeps_area_aura_visible = true
 outline_color = Color(0.05, 0.12, 0.11, 1)
 body_color = Color(0.1, 0.68, 0.55, 1)
 eye_color = Color(1, 0.9, 0.42, 1)
+uses_drop_intro = true
+uses_spawn_telegraph = true
+spawn_telegraph_flashes = 3
+spawn_warning_color = Color(1, 0.78, 0.18, 0.82)
+post_drop_wait_time = 0.45
 
 [node name="Visual" type="Node2D" parent="."]
 
-[node name="Pulse" type="Node2D" parent="Visual"]
+[node name="SpawnWarning" type="Node2D" parent="Visual"]
 visible = false
 
-[node name="Ring" type="Polygon2D" parent="Visual/Pulse"]
-color = Color(0.48, 1, 0.82, 0.3)
-polygon = PackedVector2Array(0, -92, 35, -85, 65, -65, 85, -35, 92, 0, 85, 35, 65, 65, 35, 85, 0, 92, -35, 85, -65, 65, -85, 35, -92, 0, -85, -35, -65, -65, -35, -85)
+[node name="Fill" type="Polygon2D" parent="Visual/SpawnWarning"]
+color = Color(1, 0.78, 0.18, 0.28)
+polygon = PackedVector2Array(0, -118, 45, -109, 83, -83, 109, -45, 118, 0, 109, 45, 83, 83, 45, 109, 0, 118, -45, 109, -83, 83, -109, 45, -118, 0, -109, -45, -83, -83, -45, -109)
+
+[node name="Ring" type="Polygon2D" parent="Visual/SpawnWarning"]
+color = Color(1, 0.78, 0.18, 0.82)
+polygon = PackedVector2Array(0, -122, 47, -113, 86, -86, 113, -47, 122, 0, 113, 47, 86, 86, 47, 113, 0, 122, -47, 113, -86, 86, -113, 47, -122, 0, -113, -47, -86, -86, -47, -113)
+
+[node name="AreaAura" type="Node2D" parent="Visual"]
+visible = false
+
+[node name="Fill" type="Polygon2D" parent="Visual/AreaAura"]
+color = Color(0.14, 0.88, 0.72, 0.15)
+polygon = PackedVector2Array(0, -108, 41, -100, 76, -76, 100, -41, 108, 0, 100, 41, 76, 76, 41, 100, 0, 108, -41, 100, -76, 76, -100, 41, -108, 0, -100, -41, -76, -76, -41, -100)
+
+[node name="Ring" type="Polygon2D" parent="Visual/AreaAura"]
+color = Color(0.14, 0.88, 0.72, 0.28)
+polygon = PackedVector2Array(0, -111, 42, -103, 78, -78, 103, -42, 111, 0, 103, 42, 78, 78, 42, 103, 0, 111, -42, 103, -78, 78, -103, 42, -111, 0, -103, -42, -78, -78, -42, -103)
 
 [node name="Outline" type="Polygon2D" parent="Visual"]
 color = Color(0.05, 0.12, 0.11, 1)

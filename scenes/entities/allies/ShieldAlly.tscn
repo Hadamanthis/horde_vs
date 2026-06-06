@@ -18,8 +18,9 @@ attack_interval = 1.0
 ally_type = "shield"
 attack_mode = "shield"
 shield_block_radius = 36.0
-shield_push_radius = 62.0
-shield_push_distance = 18.0
+shield_push_radius = 36.0
+shield_push_distance = 8.0
+shield_push_interval = 0.22
 
 [node name="Visual" type="Node2D" parent="."]
 

@@ -11,15 +11,15 @@ collision_mask = 0
 script = ExtResource("1_ally")
 orbit_radius = 118.0
 orbit_speed = 1.85
-move_speed = 360.0
+move_speed = 390.0
 attack_damage = 5
-attack_range = 360.0
+attack_range = 520.0
 attack_interval = 1.25
 ally_type = "bat"
 attack_mode = "pursuit"
-attack_command_radius = 420.0
+attack_command_radius = 620.0
 pursuit_hit_radius = 22.0
-pursuit_duration = 1.45
+pursuit_duration = 4.0
 
 [node name="Visual" type="Node2D" parent="."]
 

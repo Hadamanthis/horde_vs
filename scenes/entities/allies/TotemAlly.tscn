@@ -21,15 +21,33 @@ stationary_duration = 4.5
 stationary_cooldown = 3.2
 stationary_min_distance = 120.0
 stationary_max_distance = 190.0
+stationary_windup_time = 0.75
+stationary_warning_color = Color(1, 0.82, 0.24, 0.72)
+stationary_aura_color = Color(0.46, 1, 0.82, 0.28)
 
 [node name="Visual" type="Node2D" parent="."]
 
-[node name="Pulse" type="Node2D" parent="Visual"]
+[node name="SpawnWarning" type="Node2D" parent="Visual"]
 visible = false
 
-[node name="Ring" type="Polygon2D" parent="Visual/Pulse"]
-color = Color(0.48, 1, 0.82, 0.28)
+[node name="Fill" type="Polygon2D" parent="Visual/SpawnWarning"]
+color = Color(1, 0.82, 0.24, 0.28)
 polygon = PackedVector2Array(0, -88, 34, -81, 62, -62, 81, -34, 88, 0, 81, 34, 62, 62, 34, 81, 0, 88, -34, 81, -62, 62, -81, 34, -88, 0, -81, -34, -62, -62, -34, -81)
+
+[node name="Ring" type="Polygon2D" parent="Visual/SpawnWarning"]
+color = Color(1, 0.82, 0.24, 0.72)
+polygon = PackedVector2Array(0, -88, 34, -81, 62, -62, 81, -34, 88, 0, 81, 34, 62, 62, 34, 81, 0, 88, -34, 81, -62, 62, -81, 34, -88, 0, -81, -34, -62, -62, -34, -81)
+
+[node name="AreaAura" type="Node2D" parent="Visual"]
+visible = false
+
+[node name="Fill" type="Polygon2D" parent="Visual/AreaAura"]
+color = Color(0.46, 1, 0.82, 0.15)
+polygon = PackedVector2Array(0, -88, 34, -81, 62, -62, 81, -34, 88, 0, 81, 34, 62, 62, 34, 81, 0, 88, -34, 81, -62, 62, -81, 34, -88, 0, -81, -34, -62, -62, -34, -81)
+
+[node name="Ring" type="Polygon2D" parent="Visual/AreaAura"]
+color = Color(0.46, 1, 0.82, 0.28)
+polygon = PackedVector2Array(0, -91, 35, -84, 64, -64, 84, -35, 91, 0, 84, 35, 64, 64, 35, 84, 0, 91, -35, 84, -64, 64, -84, 35, -91, 0, -84, -35, -64, -64, -35, -84)
 
 [node name="Outline" type="Polygon2D" parent="Visual"]
 color = Color(0.03, 0.1, 0.09, 1)

@@ -1,6 +1,8 @@
 extends CharacterBody2D
 class_name Ally
 
+const WARNING_VISUALS = preload("res://scripts/effects/warning_visuals.gd")
+
 @export var orbit_radius: float = 58.0
 @export var orbit_speed: float = 1.45
 @export var move_speed: float = 260.0
@@ -18,10 +20,17 @@ class_name Ally
 @export var attack_dash_windup_time: float = 0.18
 @export var attack_dash_duration: float = 0.24
 @export var attack_dash_hit_radius: float = 24.0
+@export var attack_dash_warning_width: float = 32.0
+@export var attack_dash_warning_color: Color = Color(0.46, 1.0, 0.82, 0.42)
 @export var stationary_duration: float = 4.0
 @export var stationary_cooldown: float = 3.5
 @export var stationary_min_distance: float = 120.0
 @export var stationary_max_distance: float = 190.0
+@export var stationary_windup_time: float = 0.75
+@export var stationary_drop_height: float = 86.0
+@export var stationary_drop_time: float = 0.25
+@export var stationary_warning_color: Color = Color(1.0, 0.82, 0.24, 0.72)
+@export var stationary_aura_color: Color = Color(0.46, 1.0, 0.82, 0.28)
 @export var trail_damage: int = 3
 @export var trail_radius: float = 28.0
 @export var trail_duration: float = 2.4
@@ -31,6 +40,7 @@ class_name Ally
 @export var shield_block_radius: float = 34.0
 @export var shield_push_radius: float = 58.0
 @export var shield_push_distance: float = 16.0
+@export var shield_push_interval: float = 0.18
 @export var attack_flash_time: float = 0.12
 
 @onready var visual: Node2D = $Visual as Node2D
@@ -50,9 +60,12 @@ var _dash_hit_enemies: Array[Enemy] = []
 var _pursuit_target: Enemy = null
 var _pursuit_timer: float = 0.0
 var _stationary_is_active: bool = false
+var _stationary_is_telegraphing: bool = false
 var _stationary_duration_timer: float = 0.0
 var _stationary_cooldown_timer: float = 0.0
+var _stationary_windup_timer: float = 0.0
 var _trail_timer: float = 0.0
+var _shield_push_timer: float = 0.0
 
 
 func setup(target_player: Node2D, game_node: Node, index: int, count: int) -> void:
@@ -120,7 +133,7 @@ func _physics_process(delta: float) -> void:
 		_update_trail(delta)
 
 	if attack_mode == "shield":
-		_push_enemies_away_from_player()
+		_update_shield_push(delta)
 
 	if _attack_timer == 0.0:
 		_try_attack()
@@ -140,6 +153,13 @@ func _process_stationary_aura(delta: float) -> void:
 	velocity = Vector2.ZERO
 	move_and_slide()
 
+	if _stationary_is_telegraphing:
+		_update_stationary_aura_warning()
+		_stationary_windup_timer = maxf(_stationary_windup_timer - delta, 0.0)
+		if _stationary_windup_timer == 0.0:
+			_activate_stationary_aura()
+		return
+
 	if _attack_timer == 0.0:
 		_try_aura_attack()
 
@@ -154,16 +174,30 @@ func _deploy_stationary_aura() -> void:
 	var distance: float = randf_range(stationary_min_distance, stationary_max_distance)
 	global_position = player.global_position + Vector2.RIGHT.rotated(angle) * distance
 	_stationary_is_active = true
+	_stationary_is_telegraphing = true
+	_stationary_windup_timer = stationary_windup_time
 	_stationary_duration_timer = stationary_duration
-	_attack_timer = 0.0
+	_attack_timer = attack_interval
 	visible = true
 	set_physics_process(true)
+	_play_stationary_drop_intro()
+	_show_stationary_aura_warning()
+
+
+func _activate_stationary_aura() -> void:
+	_stationary_is_telegraphing = false
+	_stationary_duration_timer = stationary_duration
+	_attack_timer = 0.0
+	_hide_stationary_warning_feedback()
+	_show_stationary_active_aura()
 
 
 func _recall_stationary_aura() -> void:
 	_stationary_is_active = false
+	_stationary_is_telegraphing = false
 	_stationary_cooldown_timer = stationary_cooldown
 	visible = false
+	_hide_stationary_aura_feedback()
 
 
 func _process_dash_windup(delta: float) -> void:
@@ -172,6 +206,7 @@ func _process_dash_windup(delta: float) -> void:
 	velocity = Vector2.ZERO
 	move_and_slide()
 	visual.scale = Vector2.ONE * 1.15
+	_update_dash_warning_feedback()
 
 	if _dash_windup_timer == 0.0:
 		_dash_timer = attack_dash_duration
@@ -188,6 +223,7 @@ func _process_dash(delta: float) -> void:
 	if _dash_timer == 0.0:
 		_dash_hit_enemies.clear()
 		_attack_timer = attack_interval
+		_hide_dash_warning()
 
 
 func _begin_pursuit_attack(enemy: Enemy) -> void:
@@ -202,7 +238,7 @@ func _process_pursuit_attack(delta: float) -> void:
 		return
 
 	_pursuit_timer = maxf(_pursuit_timer - delta, 0.0)
-	if _pursuit_timer == 0.0:
+	if _pursuit_timer == 0.0 or not _is_inside_command_radius():
 		_end_pursuit_attack(true)
 		return
 
@@ -294,7 +330,10 @@ func _try_aura_attack() -> void:
 			hit_any_enemy = true
 
 	if hit_any_enemy:
-		_show_pulse_feedback()
+		if attack_mode == "stationary_aura":
+			_flash_stationary_aura_feedback()
+		else:
+			_show_pulse_feedback()
 		_start_attack_cooldown()
 
 
@@ -332,6 +371,104 @@ func _hide_pulse_feedback(pulse_node: Node2D) -> void:
 	pulse_node.scale = Vector2.ONE
 
 
+func _show_stationary_aura_warning() -> void:
+	var warning_node: Node2D = _get_stationary_warning_node()
+	if not warning_node:
+		return
+
+	warning_node.visible = true
+	warning_node.global_position = global_position
+	warning_node.scale = Vector2.ONE * 0.92
+	warning_node.modulate.a = 0.45
+	WARNING_VISUALS.set_area_node_color(warning_node, stationary_warning_color)
+
+
+func _update_stationary_aura_warning() -> void:
+	var warning_node: Node2D = _get_stationary_warning_node()
+	if not warning_node:
+		return
+
+	var progress: float = 1.0 - (_stationary_windup_timer / maxf(stationary_windup_time, 0.001))
+	warning_node.global_position = global_position
+	warning_node.scale = Vector2.ONE * lerpf(0.85, 1.08, progress)
+	warning_node.modulate.a = lerpf(0.35, 0.78, progress)
+
+
+func _flash_stationary_aura_feedback() -> void:
+	var aura_node: Node2D = _get_stationary_aura_node()
+	if not aura_node:
+		return
+
+	aura_node.visible = true
+	aura_node.global_position = global_position
+	aura_node.modulate.a = 1.0
+	aura_node.scale = Vector2.ONE * 1.08
+	WARNING_VISUALS.set_area_node_color(aura_node, Color(stationary_aura_color.r, stationary_aura_color.g, stationary_aura_color.b, 0.62))
+
+	var tween: Tween = create_tween()
+	tween.tween_property(aura_node, "scale", Vector2.ONE * 1.18, attack_flash_time)
+	tween.parallel().tween_property(aura_node, "modulate:a", 0.55, attack_flash_time)
+	tween.tween_callback(_show_stationary_active_aura)
+
+
+func _hide_stationary_aura_feedback() -> void:
+	_hide_stationary_warning_feedback()
+
+	var aura_node: Node2D = _get_stationary_aura_node()
+	if aura_node:
+		aura_node.visible = false
+		aura_node.modulate.a = 1.0
+		aura_node.scale = Vector2.ONE
+		aura_node.position = Vector2.ZERO
+
+
+func _hide_stationary_warning_feedback() -> void:
+	var warning_node: Node2D = _get_stationary_warning_node()
+	if not warning_node:
+		return
+
+	warning_node.visible = false
+	warning_node.modulate.a = 1.0
+	warning_node.scale = Vector2.ONE
+	warning_node.position = Vector2.ZERO
+
+
+func _show_stationary_active_aura() -> void:
+	var aura_node: Node2D = _get_stationary_aura_node()
+	if not aura_node:
+		return
+
+	aura_node.visible = true
+	aura_node.global_position = global_position
+	aura_node.scale = Vector2.ONE
+	aura_node.modulate.a = 1.0
+	WARNING_VISUALS.set_area_node_color(aura_node, stationary_aura_color)
+
+
+func _get_stationary_warning_node() -> Node2D:
+	var warning_node: Node2D = get_node_or_null("Visual/SpawnWarning") as Node2D
+	if warning_node:
+		return warning_node
+
+	return get_node_or_null("Visual/Pulse") as Node2D
+
+
+func _get_stationary_aura_node() -> Node2D:
+	var aura_node: Node2D = get_node_or_null("Visual/AreaAura") as Node2D
+	if aura_node:
+		return aura_node
+
+	return get_node_or_null("Visual/Pulse") as Node2D
+
+
+func _play_stationary_drop_intro() -> void:
+	visual.position.y = -stationary_drop_height
+	visual.modulate.a = 0.25
+	var tween: Tween = create_tween()
+	tween.tween_property(visual, "position:y", 0.0, stationary_drop_time)
+	tween.parallel().tween_property(visual, "modulate:a", 1.0, stationary_drop_time)
+
+
 func _begin_dash_attack(enemy: Enemy) -> void:
 	# O javali aliado herda a personalidade de inimigo: mira, prepara e investe.
 	_dash_direction = (enemy.global_position - global_position).normalized()
@@ -341,6 +478,7 @@ func _begin_dash_attack(enemy: Enemy) -> void:
 	_dash_hit_enemies.clear()
 	_dash_windup_timer = attack_dash_windup_time
 	_attack_flash_timer = attack_flash_time
+	_show_dash_warning()
 
 
 func _damage_enemies_during_dash() -> void:
@@ -355,6 +493,45 @@ func _damage_enemies_during_dash() -> void:
 			enemy.take_damage(attack_damage, "melee")
 			_dash_hit_enemies.append(enemy)
 			_spawn_damage_feedback(enemy.global_position)
+
+
+func _show_dash_warning() -> void:
+	var warning_line: Line2D = get_node_or_null("DashWarning") as Line2D
+	if not warning_line:
+		return
+
+	warning_line.visible = true
+	warning_line.width = attack_dash_warning_width
+	warning_line.default_color = attack_dash_warning_color
+	_update_dash_warning_feedback()
+
+
+func _update_dash_warning_feedback() -> void:
+	var warning_line: Line2D = get_node_or_null("DashWarning") as Line2D
+	if not warning_line:
+		return
+
+	var warning_length: float = attack_dash_speed * attack_dash_duration + attack_dash_hit_radius
+	var progress: float = 1.0 - (_dash_windup_timer / maxf(attack_dash_windup_time, 0.001))
+	var warning_color: Color = attack_dash_warning_color
+	warning_color.a = lerpf(0.22, attack_dash_warning_color.a, progress)
+
+	WARNING_VISUALS.configure_dash_warning(
+		warning_line,
+		global_position,
+		_dash_direction,
+		warning_length,
+		attack_dash_warning_width,
+		warning_color
+	)
+
+
+func _hide_dash_warning() -> void:
+	var warning_line: Line2D = get_node_or_null("DashWarning") as Line2D
+	if not warning_line:
+		return
+
+	WARNING_VISUALS.hide_dash_warning(warning_line)
 
 
 func _spawn_damage_feedback(world_position: Vector2) -> void:
@@ -378,9 +555,19 @@ func _update_trail(delta: float) -> void:
 	_trail_timer = trail_spawn_interval
 
 
-func _push_enemies_away_from_player() -> void:
+func _update_shield_push(delta: float) -> void:
+	_shield_push_timer = maxf(_shield_push_timer - delta, 0.0)
+	if _shield_push_timer > 0.0:
+		return
+
+	if _push_enemies_away_from_player():
+		_shield_push_timer = shield_push_interval
+
+
+func _push_enemies_away_from_player() -> bool:
 	# O shield empurra sempre para fora do player, evitando jogar inimigos para dentro da area segura.
 	var nearby_nodes: Array[Node] = get_tree().get_nodes_in_group("enemies")
+	var pushed_enemy: bool = false
 
 	for nearby_node in nearby_nodes:
 		var enemy: Enemy = nearby_node as Enemy
@@ -394,6 +581,9 @@ func _push_enemies_away_from_player() -> void:
 
 		var push_direction: Vector2 = (enemy.global_position - player.global_position).normalized()
 		enemy.global_position += push_direction * shield_push_distance
+		pushed_enemy = true
+
+	return pushed_enemy
 
 
 func _is_inside_command_radius() -> bool:

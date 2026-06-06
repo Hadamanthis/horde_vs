@@ -22,6 +22,14 @@ attack_dash_speed = 500.0
 attack_dash_windup_time = 0.2
 attack_dash_duration = 0.38
 attack_dash_hit_radius = 26.0
+attack_dash_warning_width = 30.0
+attack_dash_warning_color = Color(0.46, 1, 0.82, 0.36)
+
+[node name="DashWarning" type="Line2D" parent="."]
+visible = false
+width = 30.0
+default_color = Color(0.46, 1, 0.82, 0.36)
+points = PackedVector2Array(0, 0, 216, 0)
 
 [node name="Visual" type="Node2D" parent="."]
 

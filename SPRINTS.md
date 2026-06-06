@@ -38,7 +38,7 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 
 ### Proxima prioridade
 
-Sprint 10: sinergias e composicao do exercito.
+Validar Sprint 10 em jogo e entao iniciar Sprint 11: sinergias e composicao do exercito.
 
 ## Sprint 1 - Prototipo jogavel
 
@@ -362,7 +362,7 @@ Status: concluida em 2026-06-05.
 
 Objetivo: fazer o jogador se importar com quais criaturas converteu.
 
-Status: em andamento.
+Status: pronta para validacao em 2026-06-05.
 
 ### Entregue ate agora
 
@@ -417,6 +417,39 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 - Ter aliados diferentes muda a forma como a horda luta.
 - O jogador consegue perceber valor em converter tipos especificos.
 - A composicao do exercito vira uma decisao, nao apenas uma contagem.
+- `Crawler` inimigo deixa rastro que machuca o jogador por tick.
+- `CrawlerAlly` convertido deixa rastro que machuca inimigos.
+- `Shield` inimigo nao toma dano de projetil do jogador, mas ainda toma dano melee/area.
+- `ShieldAlly` bloqueia projeteis inimigos proximos e empurra inimigos para fora do player.
+- `Totem` inimigo escolhe uma regiao proxima ao player, pisca a area 3 vezes, cai ali e so depois liga a aura ao redor do proprio corpo.
+- `TotemAlly` tambem tem aviso/queda antes da aura ativa para preservar a identidade do inimigo convertido.
+- Aviso e aura do `Totem` agora usam visuais separados: amarelo para area de aviso, verde/ciano para aura ativa.
+- `Boar` e `BoarAlly` mostram uma faixa de aviso no caminho da investida durante o windup.
+- `warning_visuals.gd` concentra configuracao visual de areas/faixas de aviso para reduzir duplicacao nos scripts base.
+- `Bat` inimigo voltou a causar dano fisico por contato; o Bat aliado usa raio maior como leash de caca.
+- Rastros de `Crawler` ficaram mais finos/longos e usam cooldown por alvo para evitar dano sobreposto quebrado.
+- Projeteis bloqueados por shield mostram feedback de `Bloqueio` para deixar imunidade/defesa legivel.
+- Em `Game.tscn`, todos os tipos estao habilitados e os tipos especiais comecam cedo para facilitar teste.
+
+## Sprint 11 - Sinergias e composicao do exercito
+
+Objetivo: transformar a lista de aliados em escolhas de composicao com efeitos claros.
+
+Status: planejada.
+
+### Ideias candidatas
+
+- Bonus por quantidade de tipos iguais.
+- Slots ou custo por tipo para criaturas fortes.
+- Upgrades que melhoram tipos especificos.
+- Combos simples entre papeis, por exemplo shield protegendo spitter e crawler controlando zona.
+- Debug de composicao antes de virar HUD definitivo.
+
+### Validacao planejada
+
+- O jogador consegue explicar por que quer capturar um tipo especifico.
+- Composicoes diferentes mudam a partida de forma perceptivel.
+- O debug mostra os bonus ativos usando dados reais do codigo.
 
 ## Backlog fora do MVP atual
 
