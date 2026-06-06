@@ -1,0 +1,65 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/allies/ally.gd" id="1_ally"]
+[ext_resource type="Texture2D" path="res://sprites/enemies/level_3/individual/totem_level_3_64.png" id="2_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_totem_ally_level_3"]
+radius = 15.0
+
+[node name="TotemAllyLevel3" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_ally")
+orbit_radius = 106.0
+orbit_speed = 0.82
+move_speed = 220.0
+attack_damage = 9
+attack_range = 126.0
+attack_interval = 0.68
+ally_type = "totem"
+attack_mode = "stationary_aura"
+stationary_duration = 6.2
+stationary_cooldown = 2.6
+stationary_min_distance = 120.0
+stationary_max_distance = 220.0
+stationary_windup_time = 0.55
+stationary_warning_color = Color(1, 0.82, 0.24, 0.78)
+stationary_aura_color = Color(0.46, 1, 0.82, 0.38)
+ally_level = 3
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="SpawnWarning" type="Node2D" parent="Visual"]
+visible = false
+
+[node name="Fill" type="Polygon2D" parent="Visual/SpawnWarning"]
+color = Color(1, 0.82, 0.24, 0.28)
+polygon = PackedVector2Array(0, -112, 43, -103, 79, -79, 103, -43, 112, 0, 103, 43, 79, 79, 43, 103, 0, 112, -43, 103, -79, 79, -103, 43, -112, 0, -103, -43, -79, -79, -43, -103)
+
+[node name="Ring" type="Polygon2D" parent="Visual/SpawnWarning"]
+color = Color(1, 0.82, 0.24, 0.72)
+polygon = PackedVector2Array(0, -115, 44, -106, 81, -81, 106, -44, 115, 0, 106, 44, 81, 81, 44, 106, 0, 115, -44, 106, -81, 81, -106, 44, -115, 0, -106, -44, -81, -81, -44, -106)
+
+[node name="AreaAura" type="Node2D" parent="Visual"]
+visible = false
+
+[node name="Fill" type="Polygon2D" parent="Visual/AreaAura"]
+color = Color(0.46, 1, 0.82, 0.15)
+polygon = PackedVector2Array(0, -126, 48, -116, 89, -89, 116, -48, 126, 0, 116, 48, 89, 89, 48, 116, 0, 126, -48, 116, -89, 89, -116, 48, -126, 0, -116, -48, -89, -89, -48, -116)
+
+[node name="Ring" type="Polygon2D" parent="Visual/AreaAura"]
+color = Color(0.46, 1, 0.82, 0.32)
+polygon = PackedVector2Array(0, -130, 50, -120, 92, -92, 120, -50, 130, 0, 120, 50, 92, 92, 50, 120, 0, 130, -50, 120, -92, 92, -120, 50, -130, 0, -120, -50, -92, -92, -50, -120)
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual"]
+scale = Vector2(0.68, 0.68)
+modulate = Color(0.78, 1.06, 0.98, 1)
+texture = ExtResource("2_sprite")
+
+[node name="Mark" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.93, 0.38, 1)
+position = Vector2(0, -4)
+polygon = PackedVector2Array(0, -3, 3, 0, 0, 3, -3, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_totem_ally_level_3")

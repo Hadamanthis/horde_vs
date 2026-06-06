@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://ctiqe8looei37"]
+
+[ext_resource type="Script" uid="uid://bhjfj7xa2kowf" path="res://scripts/entities/pickup.gd" id="1_pickup"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_collect"]
+radius = 38.0
+
+[node name="Pickup" type="Node2D" unique_id=2009670794]
+script = ExtResource("1_pickup")
+
+[node name="CollectArea" type="Area2D" parent="." unique_id=215217985]
+collision_layer = 0
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CollectArea" unique_id=1155992449]
+shape = SubResource("CircleShape2D_collect")
+
+[node name="Visual" type="Node2D" parent="." unique_id=1740455450]
+
+[node name="Halo" type="Polygon2D" parent="Visual" unique_id=21159655]
+color = Color(0.12, 0.03, 0.04, 0.76)
+polygon = PackedVector2Array(0, -20, 14, -10, 20, 0, 14, 10, 0, 20, -14, 10, -20, 0, -14, -10)
+
+[node name="Glow" type="Polygon2D" parent="Visual" unique_id=936156640]
+color = Color(1, 0.2, 0.32, 0.46)
+polygon = PackedVector2Array(0, -16, 11, -7, 16, 0, 11, 7, 0, 16, -11, 7, -16, 0, -11, -7)
+
+[node name="Core" type="Polygon2D" parent="Visual" unique_id=846660328]
+color = Color(1, 0.42, 0.52, 0.95)
+polygon = PackedVector2Array(0, -14, 5, -6, 13, -6, 13, 3, 5, 3, 5, 13, -5, 13, -5, 3, -13, 3, -13, -6, -5, -6)
+
+[node name="TypeLabel" type="Label" parent="Visual" unique_id=1843521915]
+offset_left = -16.0
+offset_top = -10.0
+offset_right = 16.0
+offset_bottom = 10.0
+theme_override_font_sizes/font_size = 13
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1

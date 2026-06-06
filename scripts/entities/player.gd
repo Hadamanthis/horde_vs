@@ -11,6 +11,7 @@ signal health_changed(current_health: int, max_health: int)
 @export var attack_range: float = 420.0
 
 @onready var body_visual: Polygon2D = $Visual/Body as Polygon2D
+@onready var sprite_visual: Sprite2D = get_node_or_null("Visual/Sprite2D") as Sprite2D
 
 var current_health: int = max_health
 var can_move: bool = true
@@ -31,6 +32,7 @@ func _physics_process(delta: float) -> void:
 
 	velocity = direction * speed
 	move_and_slide()
+	_update_sprite_facing(direction)
 
 	if _hit_flash_time > 0.0:
 		_hit_flash_time -= delta
@@ -58,6 +60,20 @@ func increase_max_health(amount: int) -> void:
 	_update_visual()
 
 
+func heal(amount: int) -> int:
+	if amount <= 0 or current_health <= 0:
+		return 0
+
+	var previous_health: int = current_health
+	current_health = mini(current_health + amount, max_health)
+	var healed_amount: int = current_health - previous_health
+	if healed_amount > 0:
+		health_changed.emit(current_health, max_health)
+		_update_visual()
+
+	return healed_amount
+
+
 func set_control_enabled(is_enabled: bool) -> void:
 	# O Game chama isso na derrota para separar "personagem existe" de "jogador controla".
 	can_move = is_enabled
@@ -82,8 +98,17 @@ func _read_move_input() -> Vector2:
 
 func _update_visual() -> void:
 	# O visual fica como nos filhos na cena; o script so troca cor no feedback de dano.
-	var body_color: Color = Color(0.24, 0.78, 1.0)
+	var body_color: Color = Color(0.86, 0.88, 0.78)
 	if _hit_flash_time > 0.0:
 		body_color = Color(1.0, 1.0, 1.0)
 
 	body_visual.color = body_color
+	if is_instance_valid(sprite_visual):
+		sprite_visual.modulate = Color(1.0, 1.0, 1.0) if _hit_flash_time > 0.0 else Color.WHITE
+
+
+func _update_sprite_facing(direction: Vector2) -> void:
+	if not is_instance_valid(sprite_visual) or absf(direction.x) <= 0.05:
+		return
+
+	sprite_visual.flip_h = direction.x < 0.0

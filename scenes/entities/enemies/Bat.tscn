@@ -1,11 +1,12 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://bcibkmtby6lyi"]
 
-[ext_resource type="Script" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://vpwivemeuai2" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Texture2D" uid="uid://jyu5mijbj08l" path="res://sprites/enemies/level_1/individual/bat_level_1_64.png" id="2_lwtm4"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_bat"]
 radius = 9.0
 
-[node name="Bat" type="CharacterBody2D"]
+[node name="Bat" type="CharacterBody2D" unique_id=1444003227]
 collision_layer = 0
 collision_mask = 0
 script = ExtResource("1_enemy")
@@ -14,32 +15,36 @@ speed = 118.0
 contact_damage = 5
 contact_range = 22.0
 enemy_type = "bat"
-xp_value = 1
 separation_radius = 20.0
 separation_force = 0.35
 outline_color = Color(0.12, 0.02, 0.16, 1)
 body_color = Color(0.78, 0.16, 0.86, 1)
 eye_color = Color(1, 0.88, 0.35, 1)
 
-[node name="Visual" type="Node2D" parent="."]
+[node name="Visual" type="Node2D" parent="." unique_id=1217307068]
+visible = false
 
-[node name="Outline" type="Polygon2D" parent="Visual"]
+[node name="Outline" type="Polygon2D" parent="Visual" unique_id=1155299729]
 color = Color(0.12, 0.02, 0.16, 1)
 polygon = PackedVector2Array(-16, -4, -5, -10, 0, -7, 5, -10, 16, -4, 8, 4, 0, 10, -8, 4)
 
-[node name="Body" type="Polygon2D" parent="Visual"]
+[node name="Body" type="Polygon2D" parent="Visual" unique_id=1895194241]
 color = Color(0.78, 0.16, 0.86, 1)
 polygon = PackedVector2Array(-12, -2, -4, -7, 0, -5, 4, -7, 12, -2, 6, 3, 0, 7, -6, 3)
 
-[node name="LeftEye" type="Polygon2D" parent="Visual"]
-color = Color(1, 0.88, 0.35, 1)
+[node name="LeftEye" type="Polygon2D" parent="Visual" unique_id=1514180688]
 position = Vector2(-3, -1)
-polygon = PackedVector2Array(0, -1.5, 1.5, 0, 0, 1.5, -1.5, 0)
-
-[node name="RightEye" type="Polygon2D" parent="Visual"]
 color = Color(1, 0.88, 0.35, 1)
-position = Vector2(3, -1)
 polygon = PackedVector2Array(0, -1.5, 1.5, 0, 0, 1.5, -1.5, 0)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="RightEye" type="Polygon2D" parent="Visual" unique_id=386999676]
+position = Vector2(3, -1)
+color = Color(1, 0.88, 0.35, 1)
+polygon = PackedVector2Array(0, -1.5, 1.5, 0, 0, 1.5, -1.5, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1197643543]
 shape = SubResource("CircleShape2D_bat")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1642542647]
+scale = Vector2(0.65, 0.65)
+texture = ExtResource("2_lwtm4")

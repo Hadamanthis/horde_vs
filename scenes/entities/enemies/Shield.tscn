@@ -1,11 +1,13 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://b6b5jx4wcc15n"]
 
-[ext_resource type="Script" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://vpwivemeuai2" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Texture2D" uid="uid://bft047ar3mfu6" path="res://sprites/enemies/level_1/individual/shield_level_1_64.png" id="2_618ep"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_shield"]
-radius = 12.0
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_mtxqs"]
+radius = 11.0
+height = 28.0
 
-[node name="Shield" type="CharacterBody2D"]
+[node name="Shield" type="CharacterBody2D" unique_id=1198923880]
 collision_layer = 0
 collision_mask = 0
 script = ExtResource("1_enemy")
@@ -16,32 +18,37 @@ contact_range = 25.0
 enemy_type = "shield"
 xp_value = 3
 ranged_damage_multiplier = 0.0
-movement_mode = "chase"
 separation_radius = 32.0
 separation_force = 0.5
 outline_color = Color(0.04, 0.07, 0.16, 1)
 body_color = Color(0.28, 0.48, 0.95, 1)
 eye_color = Color(0.85, 0.95, 1, 1)
 
-[node name="Visual" type="Node2D" parent="."]
+[node name="Visual" type="Node2D" parent="." unique_id=1452988827]
+visible = false
 
-[node name="Outline" type="Polygon2D" parent="Visual"]
+[node name="Outline" type="Polygon2D" parent="Visual" unique_id=1908440502]
 color = Color(0.04, 0.07, 0.16, 1)
 polygon = PackedVector2Array(0, -16, 13, -9, 12, 8, 0, 16, -12, 8, -13, -9)
 
-[node name="Body" type="Polygon2D" parent="Visual"]
+[node name="Body" type="Polygon2D" parent="Visual" unique_id=482741359]
 color = Color(0.28, 0.48, 0.95, 1)
 polygon = PackedVector2Array(0, -12, 9, -6, 8, 6, 0, 12, -8, 6, -9, -6)
 
-[node name="LeftEye" type="Polygon2D" parent="Visual"]
-color = Color(0.85, 0.95, 1, 1)
+[node name="LeftEye" type="Polygon2D" parent="Visual" unique_id=620661679]
 position = Vector2(-3, -3)
-polygon = PackedVector2Array(0, -1.5, 1.5, 0, 0, 1.5, -1.5, 0)
-
-[node name="RightEye" type="Polygon2D" parent="Visual"]
 color = Color(0.85, 0.95, 1, 1)
-position = Vector2(3, -3)
 polygon = PackedVector2Array(0, -1.5, 1.5, 0, 0, 1.5, -1.5, 0)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_shield")
+[node name="RightEye" type="Polygon2D" parent="Visual" unique_id=1135610626]
+position = Vector2(3, -3)
+color = Color(0.85, 0.95, 1, 1)
+polygon = PackedVector2Array(0, -1.5, 1.5, 0, 0, 1.5, -1.5, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=135837836]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_618ep")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1315626846]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_mtxqs")

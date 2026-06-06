@@ -68,6 +68,7 @@ const WARNING_VISUALS = preload("res://scripts/effects/warning_visuals.gd")
 @onready var body_visual: Polygon2D = $Visual/Body as Polygon2D
 @onready var left_eye_visual: Polygon2D = $Visual/LeftEye as Polygon2D
 @onready var right_eye_visual: Polygon2D = $Visual/RightEye as Polygon2D
+@onready var sprite_visual: Sprite2D = get_node_or_null("Sprite2D") as Sprite2D
 
 var player: Node2D
 var current_health: int = max_health
@@ -85,6 +86,7 @@ var _area_target_position: Vector2 = Vector2.ZERO
 var _area_is_telegraphing: bool = false
 var _trail_timer: float = 0.0
 var _spawn_intro_active: bool = false
+var _body_visual_base_scale: Vector2 = Vector2.ONE
 
 
 func setup(target_player: Node2D) -> void:
@@ -100,6 +102,11 @@ func _ready() -> void:
 	current_health = max_health
 	_strafe_sign = -1.0 if randf() < 0.5 else 1.0
 	add_to_group("enemies")
+	if is_instance_valid(sprite_visual):
+		_hide_polygon_body_visual()
+	var body_node: Node2D = _get_body_visual_node()
+	if is_instance_valid(body_node):
+		_body_visual_base_scale = body_node.scale
 	_update_visual()
 	if uses_spawn_telegraph:
 		_begin_spawn_telegraph()
@@ -117,6 +124,7 @@ func _physics_process(delta: float) -> void:
 	# Cada cena escolhe um modo de movimento simples pelo Inspector.
 	velocity = _get_velocity_for_movement_mode(delta)
 	move_and_slide()
+	_update_sprite_facing(_get_facing_direction())
 	_update_projectile_attack(delta)
 	_update_area_attack(delta)
 	_update_trail(delta)
@@ -160,6 +168,7 @@ func _update_projectile_attack(delta: float) -> void:
 	if distance_to_player > projectile_range:
 		return
 
+	_update_sprite_facing(player.global_position - global_position)
 	projectile_requested.emit(global_position, player.global_position, projectile_damage, projectile_speed, projectile_color)
 	_projectile_timer = projectile_interval
 
@@ -267,6 +276,24 @@ func _get_separation_direction() -> Vector2:
 	return separation.normalized()
 
 
+func _get_facing_direction() -> Vector2:
+	if _dash_timer > 0.0 or _is_winding_up_dash:
+		return _dash_direction
+	if shoots_projectiles and is_instance_valid(player):
+		return player.global_position - global_position
+	if velocity.length_squared() > 1.0:
+		return velocity
+
+	return Vector2.ZERO
+
+
+func _update_sprite_facing(direction: Vector2) -> void:
+	if not is_instance_valid(sprite_visual) or absf(direction.x) <= 0.05:
+		return
+
+	sprite_visual.flip_h = direction.x < 0.0
+
+
 func take_damage(amount: int, attack_type: String = "direct") -> int:
 	if current_health <= 0 or not can_be_targeted():
 		return 0
@@ -297,6 +324,9 @@ func _update_visual() -> void:
 	var visible_body_color: Color = body_color
 	if _hit_flash_time > 0.0:
 		visible_body_color = hit_flash_color
+
+	if is_instance_valid(sprite_visual):
+		sprite_visual.modulate = hit_flash_color if _hit_flash_time > 0.0 else Color.WHITE
 
 	outline_visual.color = outline_color
 	body_visual.color = visible_body_color
@@ -507,20 +537,39 @@ func _get_spawn_warning_node() -> Node2D:
 
 
 func _set_body_visual_visible(is_visible: bool) -> void:
+	if is_instance_valid(sprite_visual):
+		sprite_visual.visible = is_visible
+		_hide_polygon_body_visual()
+		return
+
 	outline_visual.visible = is_visible
 	body_visual.visible = is_visible
 	left_eye_visual.visible = is_visible
 	right_eye_visual.visible = is_visible
 
 
+func _hide_polygon_body_visual() -> void:
+	outline_visual.visible = false
+	body_visual.visible = false
+	left_eye_visual.visible = false
+	right_eye_visual.visible = false
+
+
+func _get_body_visual_node() -> Node2D:
+	if is_instance_valid(sprite_visual):
+		return sprite_visual
+
+	return get_node_or_null("Visual") as Node2D
+
+
 func _show_resist_feedback() -> void:
-	var visual_node: Node2D = get_node_or_null("Visual") as Node2D
+	var visual_node: Node2D = _get_body_visual_node()
 	if not visual_node:
 		return
 
 	var tween: Tween = create_tween()
-	tween.tween_property(visual_node, "scale", Vector2.ONE * 1.18, 0.05)
-	tween.tween_property(visual_node, "scale", Vector2.ONE, 0.1)
+	tween.tween_property(visual_node, "scale", _body_visual_base_scale * 1.18, 0.05)
+	tween.tween_property(visual_node, "scale", _body_visual_base_scale, 0.1)
 
 
 func _play_drop_intro_if_needed(finished_callback: Callable = Callable()) -> void:
@@ -529,7 +578,7 @@ func _play_drop_intro_if_needed(finished_callback: Callable = Callable()) -> voi
 			finished_callback.call()
 		return
 
-	var visual_node: Node2D = get_node_or_null("Visual") as Node2D
+	var visual_node: Node2D = _get_body_visual_node()
 	if not visual_node:
 		if finished_callback.is_valid():
 			finished_callback.call()

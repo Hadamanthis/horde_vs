@@ -1,11 +1,12 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://3saq58tk1dic"]
 
-[ext_resource type="Script" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://vpwivemeuai2" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Texture2D" uid="uid://dmfh10brjyc1a" path="res://sprites/enemies/level_1/individual/totem_level_1_64.png" id="2_sjhfr"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_totem"]
-radius = 13.0
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3mg5i"]
+size = Vector2(16, 31)
 
-[node name="Totem" type="CharacterBody2D"]
+[node name="Totem" type="CharacterBody2D" unique_id=494359705]
 collision_layer = 0
 collision_mask = 0
 script = ExtResource("1_enemy")
@@ -23,8 +24,6 @@ uses_area_attack = true
 area_damage = 6
 area_range = 108.0
 area_interval = 2.2
-area_windup_time = 0.0
-area_target_mode = "self"
 area_feedback_color = Color(0.48, 1, 0.82, 0.5)
 area_warning_color = Color(1, 0.78, 0.18, 0.82)
 area_aura_color = Color(0.14, 0.88, 0.72, 0.28)
@@ -34,51 +33,60 @@ body_color = Color(0.1, 0.68, 0.55, 1)
 eye_color = Color(1, 0.9, 0.42, 1)
 uses_drop_intro = true
 uses_spawn_telegraph = true
-spawn_telegraph_flashes = 3
 spawn_warning_color = Color(1, 0.78, 0.18, 0.82)
 post_drop_wait_time = 0.45
 
-[node name="Visual" type="Node2D" parent="."]
+[node name="Visual" type="Node2D" parent="." unique_id=608123370]
 
-[node name="SpawnWarning" type="Node2D" parent="Visual"]
+[node name="SpawnWarning" type="Node2D" parent="Visual" unique_id=2137309045]
 visible = false
 
-[node name="Fill" type="Polygon2D" parent="Visual/SpawnWarning"]
+[node name="Fill" type="Polygon2D" parent="Visual/SpawnWarning" unique_id=1665957537]
 color = Color(1, 0.78, 0.18, 0.28)
 polygon = PackedVector2Array(0, -118, 45, -109, 83, -83, 109, -45, 118, 0, 109, 45, 83, 83, 45, 109, 0, 118, -45, 109, -83, 83, -109, 45, -118, 0, -109, -45, -83, -83, -45, -109)
 
-[node name="Ring" type="Polygon2D" parent="Visual/SpawnWarning"]
+[node name="Ring" type="Polygon2D" parent="Visual/SpawnWarning" unique_id=1443013577]
 color = Color(1, 0.78, 0.18, 0.82)
 polygon = PackedVector2Array(0, -122, 47, -113, 86, -86, 113, -47, 122, 0, 113, 47, 86, 86, 47, 113, 0, 122, -47, 113, -86, 86, -113, 47, -122, 0, -113, -47, -86, -86, -47, -113)
 
-[node name="AreaAura" type="Node2D" parent="Visual"]
+[node name="AreaAura" type="Node2D" parent="Visual" unique_id=1061729843]
 visible = false
 
-[node name="Fill" type="Polygon2D" parent="Visual/AreaAura"]
+[node name="Fill" type="Polygon2D" parent="Visual/AreaAura" unique_id=2104099259]
 color = Color(0.14, 0.88, 0.72, 0.15)
 polygon = PackedVector2Array(0, -108, 41, -100, 76, -76, 100, -41, 108, 0, 100, 41, 76, 76, 41, 100, 0, 108, -41, 100, -76, 76, -100, 41, -108, 0, -100, -41, -76, -76, -41, -100)
 
-[node name="Ring" type="Polygon2D" parent="Visual/AreaAura"]
+[node name="Ring" type="Polygon2D" parent="Visual/AreaAura" unique_id=672148638]
 color = Color(0.14, 0.88, 0.72, 0.28)
 polygon = PackedVector2Array(0, -111, 42, -103, 78, -78, 103, -42, 111, 0, 103, 42, 78, 78, 42, 103, 0, 111, -42, 103, -78, 78, -103, 42, -111, 0, -103, -42, -78, -78, -42, -103)
 
-[node name="Outline" type="Polygon2D" parent="Visual"]
+[node name="Outline" type="Polygon2D" parent="Visual" unique_id=1409576433]
+visible = false
 color = Color(0.05, 0.12, 0.11, 1)
 polygon = PackedVector2Array(-10, -17, 10, -17, 15, -8, 10, 17, -10, 17, -15, -8)
 
-[node name="Body" type="Polygon2D" parent="Visual"]
+[node name="Body" type="Polygon2D" parent="Visual" unique_id=1558401648]
+visible = false
 color = Color(0.1, 0.68, 0.55, 1)
 polygon = PackedVector2Array(-7, -13, 7, -13, 10, -6, 7, 13, -7, 13, -10, -6)
 
-[node name="LeftEye" type="Polygon2D" parent="Visual"]
-color = Color(1, 0.9, 0.42, 1)
+[node name="LeftEye" type="Polygon2D" parent="Visual" unique_id=1083854580]
+visible = false
 position = Vector2(-4, -4)
-polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
-
-[node name="RightEye" type="Polygon2D" parent="Visual"]
 color = Color(1, 0.9, 0.42, 1)
-position = Vector2(4, -4)
 polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_totem")
+[node name="RightEye" type="Polygon2D" parent="Visual" unique_id=972418156]
+visible = false
+position = Vector2(4, -4)
+color = Color(1, 0.9, 0.42, 1)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1688801100]
+position = Vector2(0, 2)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("2_sjhfr")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=13126430]
+position = Vector2(-1, 2.5)
+shape = SubResource("RectangleShape2D_3mg5i")

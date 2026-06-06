@@ -6,6 +6,12 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 
 ## Estado atual
 
+### Marco atual
+
+MVP validado em jogo em 2026-06-06. O loop principal ja funciona: mover, sobreviver, derrotar inimigos, coletar XP, escolher upgrades, capturar aliados, montar composicao, fundir aliados e usar pickups de sustentacao.
+
+O foco agora muda de provar mecanicas para melhorar apresentacao, legibilidade, balanceamento e preparar uma versao jogavel para itch.io.
+
 ### Ja validado em jogo
 
 - Movimento top-down do jogador.
@@ -24,6 +30,10 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 - Tela inicial permite comecar a partida de forma clara.
 - HUD debug pode ser alternado com F3.
 - Inimigos com papeis diferentes comecam a funcionar como pecas capturaveis.
+- Conversao virou escolha do jogador por meio de essencias de captura opcionais.
+- Upgrades genericos de horda comecaram a criar builds por composicao.
+- Fusoes de aliados repetidos foram validadas em jogo.
+- Pickups de vida e coleta global de XP foram adicionados para sustentar a run.
 
 ### Estrutura atual importante
 
@@ -33,12 +43,13 @@ Principio geral: cada sprint deve terminar com algo jogavel e validavel no Godot
 - Aliados concretos: `scenes/entities/allies/`.
 - Scripts de entidades: `scripts/entities/`.
 - Script principal/orquestrador: `scripts/game/game.gd`.
+- Guia de arte: `ART_GUIDE.md`.
 - Gameplay pausavel fica sob o no `World`.
 - HUD e controladores ficam fora do `World`.
 
 ### Proxima prioridade
 
-Validar Sprint 10 em jogo e entao iniciar Sprint 11: sinergias e composicao do exercito.
+Validar Sprint 17 em jogo e iniciar Sprint 18: objetos de mapa com colisao e quebraveis.
 
 ## Sprint 1 - Prototipo jogavel
 
@@ -435,27 +446,375 @@ O exercito deve preservar a personalidade do inimigo convertido. Em vez de todo 
 
 Objetivo: transformar a lista de aliados em escolhas de composicao com efeitos claros.
 
-Status: planejada.
+Status: concluida em 2026-06-06.
 
-### Ideias candidatas
+### Entregue ate agora
 
-- Bonus por quantidade de tipos iguais.
-- Slots ou custo por tipo para criaturas fortes.
-- Upgrades que melhoram tipos especificos.
-- Combos simples entre papeis, por exemplo shield protegendo spitter e crawler controlando zona.
-- Debug de composicao antes de virar HUD definitivo.
+- Conversao deixou de ser automatica: inimigos conversiveis agora podem gerar uma essencia de captura.
+- Essencia de captura e um drop opcional no chao; o jogador precisa pegar para adicionar o aliado.
+- Se a horda estiver cheia, a essencia nao e consumida e mostra feedback de `Horda cheia`.
+- HUD mostra quantas essencias estao no chao.
+- Debug mostra essencias ativas, chance de essencia, cooldown global dos aliados e bonus por copia.
+- Novo upgrade `Ritmo da horda`: reduz todos os cooldowns dos aliados em 10%.
+- Novo upgrade `Instinto de matilha`: tipos repetidos ganham +5% dano por copia extra.
+- Bonus de horda passaram a ser recalculados de forma centralizada nos aliados.
+
+### Decisoes
+
+- Captura opcional entrou antes de fusao porque resolve primeiro a agencia do jogador sobre a composicao.
+- Upgrades novos devem ser amplos e sistemicos, nao cartas especificas para um unico monstro.
+- Bonus por copia repetida fica como primeiro teste de build por composicao.
+- Fusao e niveis ficam para a proxima sprint, para nao misturar escolha de captura com gerenciamento de aliados na mesma entrega.
+
+### Validacao
+
+- Testado em jogo em 2026-06-06.
+- Essencias aparecem no chao e podem ser coletadas para converter inimigos.
+- O jogador consegue ignorar capturas que nao quer para a composicao atual.
+- HUD/debug mostram os dados novos da sprint.
+- Upgrades de cooldown global e bonus por copia aparecem no fluxo normal de level up.
+
+## Sprint 12 - Niveis e fusao de aliados
+
+Objetivo: fazer capturas repetidas virarem progresso claro sem lotar a tela de aliados iguais.
+
+Status: concluida em 2026-06-06.
+
+### Entregue ate agora
+
+- Aliados ganharam nivel de 1 a 3.
+- Aliados de nivel maior recebem bonus simples de dano e cooldown.
+- Visual provisorio de nivel usa escala e cor no no `Visual`.
+- Quando existem 3 aliados iguais do mesmo nivel, o level up pode oferecer uma carta de fusao.
+- A carta de fusao troca 3 aliados iguais por 1 aliado do proximo nivel.
+- HUD mostra quantidade de fusoes feitas.
+- Debug mostra fusoes disponiveis usando dados reais da composicao.
+- Essencias de captura ganharam cor, silhueta e letra por tipo para mostrar o que sera coletado.
+
+### Validacao
+
+- O jogador entende quando uma fusao esta disponivel. Validado em 2026-06-06.
+- O jogador consegue escolher entre manter quantidade ou trocar por um aliado mais forte. Validado em 2026-06-06.
+- O aliado fundido fica visualmente reconhecivel. Validado em 2026-06-06.
+- A fusao reduz aliados repetidos sem fazer a horda parecer vazia. Validado em 2026-06-06.
+- O jogador consegue identificar o tipo de uma essencia antes de coletar.
+
+## Sprint 13 - Pickups de sustentacao e coleta
+
+Objetivo: adicionar recompensas raras de mapa que ajudem a run sem competir com a composicao da horda.
+
+Status: concluida em 2026-06-06.
+
+### Entregue ate agora
+
+- Nova cena generica `scenes/entities/Pickup.tscn`.
+- Novo script `scripts/entities/pickup.gd`.
+- Pickup de vida cura o jogador sem ultrapassar a vida maxima.
+- Pickup de coleta global recolhe todos os cristais de XP ativos no mapa.
+- Coleta global nao recolhe essencias de captura.
+- Pickups têm visual distinto de XP e essencias.
+- Pickups e essencias ganharam area de coleta maior para combinar melhor com o tamanho visual.
+- `XPOrb`, `CaptureEssence` e `Pickup` agora mostram `CollectArea/CollisionShape2D` no editor.
+- `XPOrb` tambem mostra `MagnetArea/CollisionShape2D` para visualizar o alcance de magnetismo.
+- HUD mostra quantidade de pickups ativos.
+- Debug mostra contagem de pickups ativos e ultimo pickup coletado.
+
+### Validacao
+
+- Pickup de vida aparece, pode ser coletado e cura o jogador.
+- Pickup de coleta global recolhe todos os XP ativos.
+- Coleta global nao coleta essencias de captura.
+- Pickups somem corretamente na derrota/vitoria/reinicio.
+
+## Sprint 14 - UI pos-MVP
+
+Objetivo: transformar a UI de prototipo em uma UI mais legivel para testes externos.
+
+Status: pronta para validacao em 2026-06-06.
+
+### Entregue ate agora
+
+- HUD normal reorganizado em blocos: run, progresso e horda.
+- Texto inicial atualizado para explicar essencias e composicao de horda.
+- Painel de upgrades ficou maior para reduzir aperto de texto.
+- Cartas de upgrade ganharam mais altura.
+- Hint inferior ficou mais curto e alinhado com o loop atual.
 
 ### Validacao planejada
 
-- O jogador consegue explicar por que quer capturar um tipo especifico.
-- Composicoes diferentes mudam a partida de forma perceptivel.
-- O debug mostra os bonus ativos usando dados reais do codigo.
+- HUD normal deve ser entendido sem ligar o debug.
+- Tela de upgrade deve ser confortavel de ler.
+- Tela inicial deve explicar a fantasia atual sem texto longo demais.
+- UI nao deve cobrir gameplay importante durante a partida.
 
-## Backlog fora do MVP atual
+## Sprint 15 - Identidade visual e protagonista
 
-Nao implementar antes do loop base estar divertido:
+Objetivo: definir a direcao de sprites reais para player, monstros, aliados, mapas, pickups e efeitos.
 
-- Fusao de aliados.
+Status: em andamento.
+
+### Entregue ate agora
+
+- Player definido como `Pequeno Overlord`.
+- Criado guia simples de arte em `ART_GUIDE.md`.
+- Sprite temporario do player trocado de losango azul para caveira com manto, coroa, olhos de energia e aura.
+- Definido tamanho base recomendado: canvas 64x64 para player, inimigos e aliados.
+- Definido que cada monstro deve ter 3 niveis visuais.
+- Definida revisao de roster: comportamentos podem ficar, mas monstros pouco memoraveis podem mudar de nome/visual.
+- Gerada primeira folha conceitual de inimigos em `sprites/enemies/concepts/`.
+- Criados recortes 64x64 para Slime, Morcego de Osso, Carneiro Caveira, Totem Profano, Cranio Cuspidor, Verme de Ossos e Guardiao Escudo.
+- Corrigida integracao inicial com sprites reais: o script base de inimigos agora usa `Sprite2D` como visual principal quando existir, preservando os icones vetoriais antigos como fallback.
+- Corrigido `Totem`: avisos de queda e aura voltaram a aparecer mesmo com o corpo antigo escondido.
+- Definida convencao de frente: sprites que precisam apontar/rotacionar devem nascer olhando para a direita/leste.
+- Aplicadas sprites reais iniciais nas cenas de aliados, reaproveitando a silhueta do inimigo com tintura ciano e marca de conversao.
+- Aliados ganharam borda/halo ciano gerado pelo script base para melhorar identificacao no meio da horda.
+- Criada nova sprite frontal 64x64 para o player Overlord em `sprites/overlord/generated/` e aplicada na cena do player.
+- Player, inimigos e aliados agora espelham a sprite horizontalmente conforme direcao de movimento/alvo.
+- Corrigido bug do `Shield`: feedback de resistencia a projetil nao aumenta mais a sprite para escala gigante.
+- Reposicionada a direcao visual dos monstros: os sprites atuais com caveira/ossos passam a servir como referencia de Nv.2; a proxima leva deve criar Nv.1 mais simples/naturais.
+- Gerada primeira folha real de monstros Nv.1 em `sprites/enemies/level_1/`.
+- Inimigos comuns agora usam sprites Nv.1 nas cenas concretas.
+- Aliados Nv.1 agora usam sprites Nv.1; aliados fundidos Nv.2 passam a nascer em cenas proprias com sprites caveira/ossos.
+- Refatorada a evolucao de aliados para cenas concretas por nivel: criadas cenas `*AllyLevel2.tscn` para todos os tipos.
+- A fusao agora instancia a cena do nivel correspondente, permitindo stats e comportamento diferentes por nivel em vez de apenas trocar sprite.
+- Removida do script base de aliados a tabela rigida que trocava sprite por nivel.
+- Gerada primeira folha real de monstros Nv.3 em `sprites/enemies/level_3/`.
+- Criadas cenas `*AllyLevel3.tscn` para todos os tipos, com sprites mais ameacadoras e stats mais fortes.
+- A factory de aliados agora escolhe cenas concretas para Nv.1, Nv.2 e Nv.3.
+- Implementada primeira versao das habilidades finais Nv.3:
+  - Slime: golpe em arco/area curta.
+  - Bat: cacada em cadeia.
+  - Boar: investida com rastro sismico.
+  - Totem: aura maior e mais duradoura.
+  - Spitter: tiro dividido.
+  - Crawler: rastro venenoso maior.
+  - Shield: barreira circular com feedback ao empurrar.
+
+### Entregas candidatas
+
+- Definir roster final de monstros antes de gerar sprites.
+- Definir como inimigo e aliado se diferenciam visualmente.
+- Revisar visual dos aliados em jogo e decidir se a tintura/marca basta ou se precisa de sprites dedicadas.
+- Validar em jogo se as sprites Nv.1 estao legiveis na camera atual.
+- Validar em jogo as habilidades finais Nv.3 e ajustar exagero/legibilidade.
+- Balancear cada cena Nv.2 no Inspector depois da validacao em jogo.
+- Balancear cada cena Nv.3 no Inspector depois da validacao em jogo.
+- Criar lista completa de sprites necessarios para a versao itch.io.
+- Escolher ferramenta principal: Aseprite, Pixelorama, Pix2D ou Piskel.
+- Testar um fluxo com IA: gerar base, limpar no editor, importar no Godot.
+- Validar no Godot se o halo dos aliados esta forte o bastante sem poluir a tela.
+- Validar se o novo Overlord fica bom no tamanho real da camera.
+
+### Validacao planejada
+
+- Player, inimigos, aliados, pickups e mapa devem parecer do mesmo jogo.
+- O jogador deve reconhecer rapidamente quem e aliado, inimigo e pickup.
+- Um sprite em canvas 64x64 deve continuar legivel no zoom atual do jogo.
+
+## Sprint 16 - Arenas e mapa
+
+Objetivo: sair de um unico campo vazio para arenas com identidade e leitura.
+
+Status: primeira versao implementada em 2026-06-06; precisa validacao e polimento.
+
+### Entregue ate agora
+
+- Criar sistema simples de selecao/carregamento de arena.
+- Implementar 3 arenas: Cemiterio dos Fracos, Bosque das Ossadas e Ruinas do Overlord.
+- Dar tamanhos e densidades diferentes para cada arena.
+- Adicionar decoracao sem colisao para identidade visual.
+- Garantir que a camera e spawn funcionem bem em cada arena.
+- Nova cena raiz `World/ArenaRoot` em `scenes/Game.tscn`.
+- Novo script `scripts/game/arena.gd` com tamanho, bounds globais e area segura de spawn.
+- `Game` agora tem `arena_id` exportado para trocar a arena no Inspector.
+- Spawns comuns e spawn do Totem sao presos aos limites seguros da arena.
+- Camera do jogador usa os limites da arena carregada.
+- Jogador fica preso dentro dos limites da arena enquanto ainda nao temos paredes/colisoes de mapa.
+
+### Validacao planejada
+
+- As 3 arenas parecem diferentes.
+- Cada arena muda um pouco o ritmo da run.
+- Nenhuma arena cria travamentos ou becos injustos.
+
+## Sprint 17 - Legibilidade da horda e selecao de fase
+
+Objetivo: deixar claro quem pertence a horda aliada e permitir escolher uma arena sem mexer no Inspector.
+
+Status: primeira versao implementada em 2026-06-06; precisa validacao em jogo.
+
+### Entregue ate agora
+
+- Aliados ganharam identificacao visual redundante:
+  - contorno ciano baseado na sprite;
+  - ring ciano no chao;
+  - marcador amarelo acima da criatura.
+- O ring e o marcador acompanham o nivel visual do aliado.
+- Tela inicial ganhou seletor de fase com as 3 arenas existentes.
+- Selecionar uma fase antes de iniciar recarrega a arena no `World/ArenaRoot`.
+- O seletor fica desabilitado quando a run comeca.
+
+### Validacao planejada
+
+- O jogador deve reconhecer aliados rapidamente mesmo quando o inimigo tem sprite parecida.
+- O ring nao pode poluir demais a tela quando a horda crescer.
+- O jogador deve conseguir testar as 3 arenas pela tela inicial.
+
+## Sprint 18 - Objetos de mapa
+
+Objetivo: adicionar coisas no mapa que mudam movimento e geram recompensas.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- Objetos com colisao: arvores, pedras, colunas ou ruinas.
+- Objetos quebraveis: lapides, vasos, ossarios ou altares frageis.
+- Quebraveis podem dropar vida, XP ou ima de almas.
+- Inimigos e player devem respeitar colisao.
+- Aliados devem continuar legiveis perto dos obstaculos.
+
+### Validacao planejada
+
+- Obstaculos mudam rotas sem frustrar.
+- Quebraveis sao entendidos como objetos atacaveis.
+- Pickups gerados por quebraveis funcionam corretamente.
+
+## Sprint 19 - Habilidades finais Nv.3
+
+Objetivo: fazer cada criatura nivel 3 parecer uma conquista forte e visualmente especial.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- Slime Nv.3: golpe em arco. Primeira versao implementada.
+- Bat Nv.3: caçada em cadeia. Primeira versao implementada.
+- Boar Nv.3: investida sismica. Primeira versao implementada como rastro durante a investida.
+- Totem Nv.3: aura dupla. Primeira versao implementada como aura maior/mais duradoura; ainda falta visual de aura dupla real.
+- Spitter Nv.3: tiro dividido. Primeira versao implementada.
+- Crawler Nv.3: rastro venenoso maior. Primeira versao implementada.
+- Shield Nv.3: barreira circular. Primeira versao implementada como push maior com pulso visual.
+
+### Validacao planejada
+
+- Chegar ao nivel 3 muda a forma como aquele aliado luta.
+- O efeito final deve ser percebido sem ler debug.
+- Habilidades finais nao quebram performance nem legibilidade.
+
+## Sprint 20 - Feedback visual de coleta e cura
+
+Objetivo: melhorar a satisfacao visual das recompensas principais.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- XP voa visualmente ate o jogador quando magnetizado ou coletado por ima.
+- Efeito de absorcao no jogador ao receber XP.
+- Efeito de cura no jogador ao coletar vida.
+- Efeito melhor para pickup de ima de almas.
+- Efeito de quebra para objetos quebraveis.
+
+### Validacao planejada
+
+- Coletar XP e pickups deve parecer gostoso.
+- Efeitos nao podem esconder essencias ou inimigos.
+
+## Sprint 21 - Balanceamento de run de 5 minutos
+
+Objetivo: ajustar pressao, drops, XP, upgrades, capturas, fusoes, mapas e objetos para uma partida curta mais consistente.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- Ajustar chances de essencia, vida e coleta global.
+- Ajustar curva de XP e frequencia de level up.
+- Ajustar spawn e limite de inimigos por minuto por arena.
+- Revisar dano/vida dos tipos de inimigos e aliados.
+- Definir metas simples de balanceamento: facil, medio e dificil.
+
+### Validacao planejada
+
+- Uma run de 5 minutos deve ter pelo menos algumas escolhas de build.
+- O jogador deve conseguir sobreviver se jogar bem.
+- A tela nao deve ficar ilegivel por excesso de aliados/inimigos.
+
+## Sprint 22 - Objetivo final da run
+
+Objetivo: substituir ou complementar a vitoria temporaria por um encerramento mais jogavel.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- Chefe simples ou onda final aos 5 minutos.
+- Condicao de vitoria mais clara.
+- Recompensa visual ao vencer.
+
+### Validacao planejada
+
+- A partida deve ter um climax reconhecivel.
+- A horda montada deve importar no final.
+
+## Sprint 23 - Tela de composicao e resultados
+
+Objetivo: mostrar melhor o que o jogador montou durante a run.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- HUD ou painel simples de composicao por tipo e nivel.
+- Tela final mostrando aliados por tipo, fusoes, capturas recusadas/coletadas e upgrades escolhidos.
+- Melhorar nomenclatura dos tipos para ficar consistente.
+
+### Validacao planejada
+
+- O jogador consegue explicar qual build montou depois da run.
+- A tela final da vontade de tentar outra composicao.
+
+## Sprint 24 - Feedback audiovisual minimo
+
+Objetivo: adicionar feedback sensorial suficiente para o jogo parecer menos seco.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- Sons simples para XP, captura, level up, upgrade, dano e derrota.
+- Pequenos efeitos visuais para pickup de vida e coleta global.
+- Feedback especial para fusao de aliados.
+- Shake leve ou flash controlado para eventos importantes.
+
+### Validacao planejada
+
+- Coletar, converter, fundir e subir de nivel devem parecer satisfatorios.
+- Feedback nao pode atrapalhar leitura com muitos personagens.
+
+## Sprint 25 - Build itch.io
+
+Objetivo: preparar uma primeira versao compartilhavel.
+
+Status: planejada.
+
+### Entregas candidatas
+
+- Revisar controles PC/Web.
+- Criar tela de creditos simples.
+- Preparar export Web.
+- Testar tamanho de tela e leitura no navegador.
+- Escrever pagina curta de itch.io com controles e proposta.
+
+### Validacao planejada
+
+- Outra pessoa consegue abrir, entender e jogar sem explicacao direta.
+
+## Backlog pos-MVP
+
+Considerar apenas depois das sprints de UI, balanceamento e export jogavel:
+
 - Multiplos mapas.
 - Loja permanente.
 - Arvore de habilidades.
@@ -482,4 +841,4 @@ Nao implementar antes do loop base estar divertido:
 - [x] HUD funcional.
 - [x] Tela de derrota completa.
 - [x] Reinicio rapido.
-- [ ] Partida de pelo menos 5 minutos balanceada.
+- [x] Partida de pelo menos 5 minutos validada como MVP.

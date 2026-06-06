@@ -1,0 +1,50 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/allies/ally.gd" id="1_ally"]
+[ext_resource type="Texture2D" path="res://sprites/enemies/concepts/individual/bone_bat_concept_64.png" id="2_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_bat_ally_level_2"]
+radius = 10.0
+
+[node name="BatAllyLevel2" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_ally")
+orbit_radius = 124.0
+orbit_speed = 2.05
+move_speed = 430.0
+attack_damage = 7
+attack_range = 560.0
+attack_interval = 1.05
+ally_type = "bat"
+attack_mode = "pursuit"
+attack_command_radius = 680.0
+pursuit_hit_radius = 25.0
+pursuit_duration = 4.6
+ally_level = 2
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.03, 0.09, 0.11, 1)
+polygon = PackedVector2Array(-15, -4, -5, -10, 0, -7, 5, -10, 15, -4, 8, 4, 0, 9, -8, 4)
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.38, 0.92, 0.86, 1)
+polygon = PackedVector2Array(-11, -2, -4, -7, 0, -5, 4, -7, 11, -2, 6, 3, 0, 6, -6, 3)
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual"]
+position = Vector2(4.2351647e-22, -4)
+scale = Vector2(0.65, 0.65)
+modulate = Color(0.72, 1, 0.95, 1)
+texture = ExtResource("2_sprite")
+
+[node name="Mark" type="Polygon2D" parent="Visual"]
+color = Color(0.9, 0.72, 1, 1)
+position = Vector2(0, -1)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_bat_ally_level_2")

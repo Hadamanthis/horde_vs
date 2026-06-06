@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/entities/allies/ally.gd" id="1_ally"]
+[ext_resource type="Texture2D" path="res://sprites/enemies/level_1/individual/bat_level_1_64.png" id="2_sprite"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_bat_ally"]
 radius = 9.0
@@ -24,12 +25,20 @@ pursuit_duration = 4.0
 [node name="Visual" type="Node2D" parent="."]
 
 [node name="Outline" type="Polygon2D" parent="Visual"]
+visible = false
 color = Color(0.03, 0.09, 0.11, 1)
 polygon = PackedVector2Array(-15, -4, -5, -10, 0, -7, 5, -10, 15, -4, 8, 4, 0, 9, -8, 4)
 
 [node name="Body" type="Polygon2D" parent="Visual"]
+visible = false
 color = Color(0.38, 0.92, 0.86, 1)
 polygon = PackedVector2Array(-11, -2, -4, -7, 0, -5, 4, -7, 11, -2, 6, 3, 0, 6, -6, 3)
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual"]
+position = Vector2(4.2351647e-22, -4)
+scale = Vector2(0.65, 0.65)
+modulate = Color(0.72, 1, 0.95, 1)
+texture = ExtResource("2_sprite")
 
 [node name="Mark" type="Polygon2D" parent="Visual"]
 color = Color(0.9, 0.72, 1, 1)

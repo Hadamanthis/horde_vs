@@ -22,13 +22,33 @@ const TOTEM_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/Tote
 const SPITTER_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/SpitterAlly.tscn")
 const CRAWLER_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/CrawlerAlly.tscn")
 const SHIELD_ALLY_SCENE: PackedScene = preload("res://scenes/entities/allies/ShieldAlly.tscn")
+const SLIME_ALLY_LEVEL_2_SCENE: PackedScene = preload("res://scenes/entities/allies/SlimeAllyLevel2.tscn")
+const BAT_ALLY_LEVEL_2_SCENE: PackedScene = preload("res://scenes/entities/allies/BatAllyLevel2.tscn")
+const BOAR_ALLY_LEVEL_2_SCENE: PackedScene = preload("res://scenes/entities/allies/BoarAllyLevel2.tscn")
+const TOTEM_ALLY_LEVEL_2_SCENE: PackedScene = preload("res://scenes/entities/allies/TotemAllyLevel2.tscn")
+const SPITTER_ALLY_LEVEL_2_SCENE: PackedScene = preload("res://scenes/entities/allies/SpitterAllyLevel2.tscn")
+const CRAWLER_ALLY_LEVEL_2_SCENE: PackedScene = preload("res://scenes/entities/allies/CrawlerAllyLevel2.tscn")
+const SHIELD_ALLY_LEVEL_2_SCENE: PackedScene = preload("res://scenes/entities/allies/ShieldAllyLevel2.tscn")
+const SLIME_ALLY_LEVEL_3_SCENE: PackedScene = preload("res://scenes/entities/allies/SlimeAllyLevel3.tscn")
+const BAT_ALLY_LEVEL_3_SCENE: PackedScene = preload("res://scenes/entities/allies/BatAllyLevel3.tscn")
+const BOAR_ALLY_LEVEL_3_SCENE: PackedScene = preload("res://scenes/entities/allies/BoarAllyLevel3.tscn")
+const TOTEM_ALLY_LEVEL_3_SCENE: PackedScene = preload("res://scenes/entities/allies/TotemAllyLevel3.tscn")
+const SPITTER_ALLY_LEVEL_3_SCENE: PackedScene = preload("res://scenes/entities/allies/SpitterAllyLevel3.tscn")
+const CRAWLER_ALLY_LEVEL_3_SCENE: PackedScene = preload("res://scenes/entities/allies/CrawlerAllyLevel3.tscn")
+const SHIELD_ALLY_LEVEL_3_SCENE: PackedScene = preload("res://scenes/entities/allies/ShieldAllyLevel3.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/entities/Projectile.tscn")
 const XP_ORB_SCENE: PackedScene = preload("res://scenes/entities/XPOrb.tscn")
+const CAPTURE_ESSENCE_SCENE: PackedScene = preload("res://scenes/entities/CaptureEssence.tscn")
+const PICKUP_SCENE: PackedScene = preload("res://scenes/entities/Pickup.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/effects/FloatingText.tscn")
 const TRAIL_ZONE_SCENE: PackedScene = preload("res://scenes/effects/TrailZone.tscn")
+const CEMETERY_ARENA_SCENE: PackedScene = preload("res://scenes/arenas/CemeteryArena.tscn")
+const BONE_GROVE_ARENA_SCENE: PackedScene = preload("res://scenes/arenas/BoneGroveArena.tscn")
+const OVERLORD_RUINS_ARENA_SCENE: PackedScene = preload("res://scenes/arenas/OverlordRuinsArena.tscn")
 
 @export var conversion_chance: float = 0.2
 @export var ally_limit: int = 5
+@export_enum("cemetery", "bone_grove", "overlord_ruins") var arena_id: String = "cemetery"
 @export var enabled_enemy_types: Array[String] = ["slime", "bat", "boar", "totem", "spitter", "crawler", "shield"]
 @export var max_enemies: int = 42
 @export var spawn_interval: float = 1.15
@@ -51,9 +71,13 @@ const TRAIL_ZONE_SCENE: PackedScene = preload("res://scenes/effects/TrailZone.ts
 @export var spawn_safe_margin: float = 160.0
 @export var contact_damage_tick_interval: float = 0.5
 @export var show_debug_info: bool = false
+@export var health_pickup_chance: float = 0.035
+@export var xp_vacuum_pickup_chance: float = 0.015
+@export var health_pickup_amount: int = 25
 
 # Referencias tipadas para os nos da cena principal.
 @onready var world: Node2D = $World as Node2D
+@onready var arena_root: Node2D = $World/ArenaRoot as Node2D
 @onready var player: Player = $World/Player as Player
 @onready var player_camera: Camera2D = $World/Player/Camera2D as Camera2D
 @onready var entities: Node2D = $World/Entities as Node2D
@@ -64,6 +88,7 @@ const TRAIL_ZONE_SCENE: PackedScene = preload("res://scenes/effects/TrailZone.ts
 @onready var debug_label: Label = $HUD/DebugInfo as Label
 @onready var hint_label: Label = $HUD/Hint as Label
 @onready var start_panel: PanelContainer = $HUD/StartPanel as PanelContainer
+@onready var arena_select: OptionButton = $HUD/StartPanel/Margin/VBox/ArenaSelect as OptionButton
 @onready var start_button: Button = $HUD/StartPanel/Margin/VBox/StartButton as Button
 @onready var game_over_panel: PanelContainer = $HUD/GameOverPanel as PanelContainer
 @onready var game_over_title_label: Label = $HUD/GameOverPanel/Margin/VBox/Title as Label
@@ -78,6 +103,8 @@ const TRAIL_ZONE_SCENE: PackedScene = preload("res://scenes/effects/TrailZone.ts
 var enemies: Array[Enemy] = []
 var allies: Array[Ally] = []
 var active_xp_orbs: Array[Node2D] = []
+var active_capture_essences: Array[Node2D] = []
+var active_pickups: Array[Node2D] = []
 var upgrade_buttons: Array[Button] = []
 var current_upgrade_choices: Array[Dictionary] = []
 var upgrade_pool: Array[Dictionary] = [
@@ -99,7 +126,7 @@ var upgrade_pool: Array[Dictionary] = [
 	{
 		"id": "conversion_chance",
 		"name": "Chamado sombrio",
-		"description": "+10% chance de converter inimigos.",
+		"description": "+10% chance de criar essencia de captura.",
 	},
 	{
 		"id": "ally_limit",
@@ -110,6 +137,16 @@ var upgrade_pool: Array[Dictionary] = [
 		"id": "ally_damage",
 		"name": "Garras da horda",
 		"description": "Aliados causam +2 dano.",
+	},
+	{
+		"id": "ally_cooldowns",
+		"name": "Ritmo da horda",
+		"description": "Aliados reduzem todos os cooldowns em 10%.",
+	},
+	{
+		"id": "same_type_damage",
+		"name": "Instinto de matilha",
+		"description": "Tipos repetidos ganham +5% dano por copia extra.",
 	},
 	{
 		"id": "max_health",
@@ -129,6 +166,10 @@ var player_level: int = 1
 var current_xp: int = 0
 var xp_to_next_level: int = 5
 var ally_damage_bonus: int = 0
+var ally_cooldown_multiplier: float = 1.0
+var same_type_damage_per_extra_copy: float = 0.0
+var ally_effect_duration_multiplier: float = 1.0
+var allies_fused: int = 0
 var xp_magnet_bonus: float = 0.0
 var elapsed_time: float = 0.0
 var _spawn_timer: float = 0.0
@@ -140,6 +181,7 @@ var _last_contact_damage: int = 0
 var _last_upgrade_id: String = "-"
 var _last_spawned_enemy_type: String = "-"
 var _last_converted_enemy_type: String = "-"
+var _last_pickup_type: String = "-"
 var _pending_upgrade_count: int = 0
 var _is_choosing_upgrade: bool = false
 var _game_started: bool = false
@@ -149,16 +191,21 @@ var _difficulty_progress: float = 0.0
 var _current_spawn_interval: float = 1.15
 var _current_max_enemies: int = 42
 var _trail_damage_cooldowns: Dictionary = {}
+var _current_arena: Node2D = null
+var _current_arena_name: String = "Arena"
+var _arena_ids: Array[String] = ["cemetery", "bone_grove", "overlord_ruins"]
 
 
 func _ready() -> void:
 	randomize()
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_load_arena()
 	start_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	start_panel.visible = true
 	start_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	start_button.pressed.connect(_start_run)
+	_configure_arena_select()
 	upgrade_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	upgrade_panel.visible = false
 	game_over_panel.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -183,7 +230,7 @@ func _ready() -> void:
 	stats_label.visible = false
 	player.set_control_enabled(false)
 	get_tree().paused = true
-	hint_label.text = "Clique em Comecar partida. F3 alterna debug."
+	hint_label.text = "Arena: %s. Clique em Comecar partida. F3 alterna debug." % _current_arena_name
 	start_button.grab_focus()
 
 	_update_hud()
@@ -215,6 +262,7 @@ func _process(delta: float) -> void:
 	_update_trail_damage_cooldowns(delta)
 	_level_notice_timer = maxf(_level_notice_timer - delta, 0.0)
 	level_up_label.visible = _level_notice_timer > 0.0
+	_keep_player_inside_arena()
 	_update_contact_damage()
 
 	if elapsed_time >= match_duration:
@@ -233,16 +281,149 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _load_arena() -> void:
+	if not is_instance_valid(arena_root):
+		return
+
+	for child in arena_root.get_children():
+		child.free()
+
+	var arena_scene: PackedScene = _get_arena_scene()
+	_current_arena = arena_scene.instantiate() as Node2D
+	arena_root.add_child(_current_arena)
+
+	var arena_name_value: Variant = _current_arena.get("arena_name")
+	if typeof(arena_name_value) == TYPE_STRING:
+		_current_arena_name = String(arena_name_value)
+
+	if is_instance_valid(player):
+		player.global_position = _get_arena_center()
+
+	_apply_arena_camera_limits()
+
+
+func _configure_arena_select() -> void:
+	if not is_instance_valid(arena_select):
+		return
+
+	arena_select.process_mode = Node.PROCESS_MODE_ALWAYS
+	arena_select.clear()
+	for arena_option_id in _arena_ids:
+		arena_select.add_item(_get_arena_display_name(arena_option_id))
+
+	var selected_index: int = maxi(_arena_ids.find(arena_id), 0)
+	arena_select.select(selected_index)
+	arena_select.item_selected.connect(_on_arena_selected)
+
+
+func _on_arena_selected(index: int) -> void:
+	if _game_started:
+		return
+	if index < 0 or index >= _arena_ids.size():
+		return
+
+	arena_id = _arena_ids[index]
+	_load_arena()
+	hint_label.text = "Arena: %s. Clique em Comecar partida. F3 alterna debug." % _current_arena_name
+
+
+func _get_arena_display_name(arena_option_id: String) -> String:
+	match arena_option_id:
+		"bone_grove":
+			return "Bosque das Ossadas"
+		"overlord_ruins":
+			return "Ruinas do Overlord"
+		_:
+			return "Cemiterio dos Fracos"
+
+
+func _get_arena_scene() -> PackedScene:
+	match arena_id:
+		"bone_grove":
+			return BONE_GROVE_ARENA_SCENE
+		"overlord_ruins":
+			return OVERLORD_RUINS_ARENA_SCENE
+		_:
+			return CEMETERY_ARENA_SCENE
+
+
+func _apply_arena_camera_limits() -> void:
+	if not is_instance_valid(player_camera):
+		return
+
+	var bounds: Rect2 = _get_arena_global_bounds()
+	if bounds.size == Vector2.ZERO:
+		return
+
+	player_camera.limit_left = int(bounds.position.x)
+	player_camera.limit_top = int(bounds.position.y)
+	player_camera.limit_right = int(bounds.position.x + bounds.size.x)
+	player_camera.limit_bottom = int(bounds.position.y + bounds.size.y)
+
+
+func _get_arena_center() -> Vector2:
+	var bounds: Rect2 = _get_arena_global_bounds()
+	if bounds.size == Vector2.ZERO:
+		return Vector2.ZERO
+	return bounds.get_center()
+
+
+func _get_arena_global_bounds() -> Rect2:
+	if not is_instance_valid(_current_arena):
+		return Rect2()
+	if not _current_arena.has_method("get_global_bounds"):
+		return Rect2()
+
+	var bounds_value: Variant = _current_arena.call("get_global_bounds")
+	if typeof(bounds_value) != TYPE_RECT2:
+		return Rect2()
+
+	return bounds_value as Rect2
+
+
+func _get_arena_spawn_bounds(margin: float = 160.0) -> Rect2:
+	if not is_instance_valid(_current_arena):
+		return Rect2()
+	if not _current_arena.has_method("get_global_spawn_bounds"):
+		return Rect2()
+
+	var bounds_value: Variant = _current_arena.call("get_global_spawn_bounds", margin)
+	if typeof(bounds_value) != TYPE_RECT2:
+		return Rect2()
+
+	return bounds_value as Rect2
+
+
+func _clamp_position_to_arena(spawn_position: Vector2, margin: float = 48.0) -> Vector2:
+	var bounds: Rect2 = _get_arena_spawn_bounds(margin)
+	if bounds.size == Vector2.ZERO:
+		return spawn_position
+
+	return Vector2(
+		clampf(spawn_position.x, bounds.position.x, bounds.position.x + bounds.size.x),
+		clampf(spawn_position.y, bounds.position.y, bounds.position.y + bounds.size.y)
+	)
+
+
+func _keep_player_inside_arena() -> void:
+	if not is_instance_valid(player):
+		return
+
+	player.global_position = _clamp_position_to_arena(player.global_position, 32.0)
+
+
 func _start_run() -> void:
 	if _game_started:
 		return
 
 	_game_started = true
+	if is_instance_valid(arena_select):
+		arena_select.disabled = true
 	start_panel.visible = false
 	stats_label.visible = true
 	player.set_control_enabled(true)
 	get_tree().paused = false
-	hint_label.text = "WASD/setas movem. Ataque automatico. R reinicia. F3 debug."
+	hint_label.text = "WASD/setas movem. Pegue essencias para converter. R reinicia. F3 debug."
 
 	# A partida nasce com uma pequena horda inimiga para o loop aparecer imediatamente.
 	for index in range(initial_enemy_count):
@@ -433,7 +614,8 @@ func _get_spawn_position_outside_camera(forced_angle: float = -1.0) -> Vector2:
 
 	var edge_distance: float = minf(x_distance, y_distance)
 	var extra_distance: float = spawn_safe_margin + randf_range(0.0, 96.0)
-	return center + direction * (edge_distance + extra_distance)
+	var spawn_position: Vector2 = center + direction * (edge_distance + extra_distance)
+	return _clamp_position_to_arena(spawn_position, 72.0)
 
 
 func _get_totem_spawn_position_near_player() -> Vector2:
@@ -445,10 +627,11 @@ func _get_totem_spawn_position_near_player() -> Vector2:
 	var distance: float = randf_range(96.0, 210.0)
 	var desired_position: Vector2 = player.global_position + Vector2.RIGHT.rotated(angle) * distance
 
-	return Vector2(
+	var spawn_position: Vector2 = Vector2(
 		clampf(desired_position.x, spawn_area.position.x, spawn_area.position.x + spawn_area.size.x),
 		clampf(desired_position.y, spawn_area.position.y, spawn_area.position.y + spawn_area.size.y)
 	)
+	return _clamp_position_to_arena(spawn_position, 96.0)
 
 
 func _fire_player_projectile() -> void:
@@ -657,31 +840,172 @@ func _on_enemy_died(enemy: Enemy) -> void:
 	enemy_died.emit(enemy.enemy_type, death_position)
 	_spawn_xp_orb(death_position, enemy.xp_value)
 
-	# Conversao e o coracao do jogo: parte dos inimigos derrotados vira aliado.
-	if enemy.convertible and allies.size() < ally_limit and randf() <= conversion_chance:
-		_convert_enemy(enemy.enemy_type, death_position)
+	# Conversao agora vira escolha: a essencia aparece, mas o jogador decide se pega.
+	if enemy.convertible and randf() <= conversion_chance:
+		_spawn_capture_essence(death_position, enemy.enemy_type)
+
+	_try_spawn_pickup(death_position)
+	_update_hud()
+
+
+func _try_spawn_pickup(spawn_position: Vector2) -> void:
+	var roll: float = randf()
+	if roll <= xp_vacuum_pickup_chance:
+		_spawn_pickup(spawn_position, "xp_vacuum")
+		return
+
+	if roll <= xp_vacuum_pickup_chance + health_pickup_chance:
+		_spawn_pickup(spawn_position, "health")
+
+
+func _spawn_pickup(spawn_position: Vector2, pickup_type: String) -> void:
+	var pickup: Node2D = PICKUP_SCENE.instantiate() as Node2D
+	pickup.global_position = spawn_position + Vector2(randf_range(-18.0, 18.0), randf_range(-18.0, 18.0))
+	pickup.call("setup", player, pickup_type)
+	pickup.connect("collected", Callable(self, "_on_pickup_collected"))
+	pickup.connect("expired", Callable(self, "_on_pickup_expired"))
+	xp_orbs.add_child(pickup)
+	active_pickups.append(pickup)
+
+
+func _on_pickup_collected(pickup: Node2D, pickup_type: String) -> void:
+	if _game_is_over:
+		return
+
+	active_pickups.erase(pickup)
+	_last_pickup_type = pickup_type
+
+	match pickup_type:
+		"xp_vacuum":
+			_collect_all_xp_orbs()
+			_spawn_feedback_text("Almas coletadas", player.global_position + Vector2(0.0, -36.0), Color(0.68, 0.95, 1.0))
+		_:
+			var healed_amount: int = player.heal(health_pickup_amount)
+			var text: String = "+%d vida" % healed_amount if healed_amount > 0 else "Vida cheia"
+			_spawn_feedback_text(text, player.global_position + Vector2(0.0, -36.0), Color(1.0, 0.42, 0.52))
 
 	_update_hud()
 
 
+func _on_pickup_expired(pickup: Node2D) -> void:
+	active_pickups.erase(pickup)
+	_update_hud()
+
+
+func _collect_all_xp_orbs() -> void:
+	var total_xp: int = 0
+	var orbs_to_collect: Array[Node2D] = active_xp_orbs.duplicate()
+
+	for orb in orbs_to_collect:
+		if not is_instance_valid(orb):
+			continue
+
+		total_xp += int(orb.get("amount"))
+		active_xp_orbs.erase(orb)
+		orb.queue_free()
+
+	if total_xp <= 0:
+		return
+
+	current_xp += total_xp
+	xp_collected.emit(total_xp)
+	_spawn_feedback_text("+%d XP" % total_xp, player.global_position + Vector2(0.0, -56.0), Color(0.82, 1.0, 0.28))
+
+	while current_xp >= xp_to_next_level:
+		current_xp -= xp_to_next_level
+		_gain_level()
+
+
+func _spawn_capture_essence(spawn_position: Vector2, enemy_type: String) -> void:
+	var essence: Node2D = CAPTURE_ESSENCE_SCENE.instantiate() as Node2D
+	essence.global_position = spawn_position + Vector2(randf_range(-12.0, 12.0), randf_range(-12.0, 12.0))
+	essence.call("setup", player, enemy_type)
+	essence.connect("collection_requested", Callable(self, "_on_capture_essence_collection_requested"))
+	essence.connect("expired", Callable(self, "_on_capture_essence_expired"))
+	xp_orbs.add_child(essence)
+	active_capture_essences.append(essence)
+	_spawn_feedback_text("Essencia", essence.global_position + Vector2(0.0, -24.0), Color(0.72, 0.42, 1.0))
+
+
+func _on_capture_essence_collection_requested(essence: Node2D, enemy_type: String) -> void:
+	if _game_is_over or not is_instance_valid(essence):
+		return
+
+	if allies.size() >= ally_limit:
+		_spawn_feedback_text("Horda cheia", essence.global_position + Vector2(0.0, -26.0), Color(1.0, 0.72, 0.32))
+		return
+
+	active_capture_essences.erase(essence)
+	_convert_enemy(enemy_type, essence.global_position)
+	essence.queue_free()
+	_update_hud()
+
+
+func _on_capture_essence_expired(essence: Node2D) -> void:
+	active_capture_essences.erase(essence)
+	_update_hud()
+
+
 func _convert_enemy(enemy_type: String, spawn_position: Vector2) -> void:
+	_spawn_ally(enemy_type, spawn_position, 1, true)
+
+
+func _spawn_ally(enemy_type: String, spawn_position: Vector2, ally_level: int = 1, count_as_conversion: bool = false) -> Ally:
 	# O aliado nasce no ponto da morte para vender visualmente a conversao.
-	var ally_scene: PackedScene = _get_ally_scene_for_enemy_type(enemy_type)
+	var ally_scene: PackedScene = _get_ally_scene_for_enemy_type(enemy_type, ally_level)
 	var ally: Ally = ally_scene.instantiate() as Ally
 	ally.global_position = spawn_position
-	ally.attack_damage += ally_damage_bonus
 	entities.add_child(ally)
 	allies.append(ally)
-	ally.setup(player, self, allies.size() - 1, allies.size())
-	allies_converted += 1
-	_last_converted_enemy_type = enemy_type
-	enemy_converted.emit(enemy_type, spawn_position)
-	_spawn_feedback_text("Convertido", spawn_position + Vector2(0.0, -28.0), Color(0.55, 1.0, 0.82))
+	ally.setup(player, self, allies.size() - 1, allies.size(), ally_level)
+	if count_as_conversion:
+		allies_converted += 1
+	var feedback_text: String = "Convertido" if ally_level == 1 else "%s Nv.%d" % [_format_ally_type_name(enemy_type), ally_level]
+	if count_as_conversion:
+		_last_converted_enemy_type = enemy_type
+		enemy_converted.emit(enemy_type, spawn_position)
+	_spawn_feedback_text(feedback_text, spawn_position + Vector2(0.0, -28.0), Color(0.55, 1.0, 0.82))
 	_refresh_ally_orbits()
+	_apply_horde_bonuses_to_allies()
+	return ally
 
 
-func _get_ally_scene_for_enemy_type(enemy_type: String) -> PackedScene:
-	# Cada inimigo convertido vira a cena aliada equivalente ao seu tipo.
+func _get_ally_scene_for_enemy_type(enemy_type: String, ally_level: int) -> PackedScene:
+	# Cada nivel pode ter cena propria para permitir comportamento, stats e visual especificos.
+	if ally_level >= 3:
+		match enemy_type:
+			"boar":
+				return BOAR_ALLY_LEVEL_3_SCENE
+			"totem":
+				return TOTEM_ALLY_LEVEL_3_SCENE
+			"spitter":
+				return SPITTER_ALLY_LEVEL_3_SCENE
+			"crawler":
+				return CRAWLER_ALLY_LEVEL_3_SCENE
+			"shield":
+				return SHIELD_ALLY_LEVEL_3_SCENE
+			"bat":
+				return BAT_ALLY_LEVEL_3_SCENE
+			_:
+				return SLIME_ALLY_LEVEL_3_SCENE
+
+	if ally_level >= 2:
+		match enemy_type:
+			"boar":
+				return BOAR_ALLY_LEVEL_2_SCENE
+			"totem":
+				return TOTEM_ALLY_LEVEL_2_SCENE
+			"spitter":
+				return SPITTER_ALLY_LEVEL_2_SCENE
+			"crawler":
+				return CRAWLER_ALLY_LEVEL_2_SCENE
+			"shield":
+				return SHIELD_ALLY_LEVEL_2_SCENE
+			"bat":
+				return BAT_ALLY_LEVEL_2_SCENE
+			_:
+				return SLIME_ALLY_LEVEL_2_SCENE
+
 	match enemy_type:
 		"boar":
 			return BOAR_ALLY_SCENE
@@ -739,7 +1063,7 @@ func _open_upgrade_choices() -> void:
 	for index in range(upgrade_buttons.size()):
 		var upgrade: Dictionary = current_upgrade_choices[index]
 		var button: Button = upgrade_buttons[index]
-		button.text = "%d. %s\n%s" % [
+		button.text = "%d  %s\n%s" % [
 			index + 1,
 			String(upgrade["name"]),
 			String(upgrade["description"]),
@@ -751,10 +1075,15 @@ func _open_upgrade_choices() -> void:
 
 func _roll_upgrade_choices(amount: int) -> Array[Dictionary]:
 	var available_upgrades: Array[Dictionary] = []
+	var available_fusions: Array[Dictionary] = _get_available_fusion_upgrades()
 	var choices: Array[Dictionary] = []
 
 	for upgrade in upgrade_pool:
 		available_upgrades.append(upgrade)
+
+	if not available_fusions.is_empty() and amount > 0:
+		var fusion_index: int = randi_range(0, available_fusions.size() - 1)
+		choices.append(available_fusions[fusion_index])
 
 	while choices.size() < amount and available_upgrades.size() > 0:
 		var chosen_index: int = randi_range(0, available_upgrades.size() - 1)
@@ -779,7 +1108,7 @@ func _select_upgrade(choice_index: int) -> void:
 
 	var upgrade: Dictionary = current_upgrade_choices[choice_index]
 	var upgrade_id: String = String(upgrade["id"])
-	_apply_upgrade(upgrade_id)
+	_apply_upgrade(upgrade)
 	_last_upgrade_id = upgrade_id
 	upgrade_selected.emit(upgrade_id)
 
@@ -791,13 +1120,14 @@ func _select_upgrade(choice_index: int) -> void:
 	_is_choosing_upgrade = false
 	current_upgrade_choices.clear()
 	upgrade_panel.visible = false
-	hint_label.text = "WASD/setas movem. Ataque automatico. R reinicia."
+	hint_label.text = "WASD/setas movem. Pegue essencias para converter. R reinicia."
 	player.set_control_enabled(true)
 	get_tree().paused = false
 	_update_hud()
 
 
-func _apply_upgrade(upgrade_id: String) -> void:
+func _apply_upgrade(upgrade: Dictionary) -> void:
+	var upgrade_id: String = String(upgrade["id"])
 	match upgrade_id:
 		"orb_damage":
 			player.projectile_damage += 3
@@ -812,9 +1142,13 @@ func _apply_upgrade(upgrade_id: String) -> void:
 			_refresh_ally_orbits()
 		"ally_damage":
 			ally_damage_bonus += 2
-			for ally in allies:
-				if is_instance_valid(ally):
-					ally.attack_damage += 2
+			_apply_horde_bonuses_to_allies()
+		"ally_cooldowns":
+			ally_cooldown_multiplier = maxf(ally_cooldown_multiplier * 0.9, 0.45)
+			_apply_horde_bonuses_to_allies()
+		"same_type_damage":
+			same_type_damage_per_extra_copy += 0.05
+			_apply_horde_bonuses_to_allies()
 		"max_health":
 			player.increase_max_health(20)
 		"pickup_range":
@@ -823,6 +1157,8 @@ func _apply_upgrade(upgrade_id: String) -> void:
 				if is_instance_valid(orb):
 					var magnet_radius: float = float(orb.get("magnet_radius"))
 					orb.set("magnet_radius", magnet_radius + 40.0)
+		"fuse_allies":
+			_apply_fusion(String(upgrade["ally_type"]), int(upgrade["ally_level"]))
 
 
 func _refresh_ally_orbits() -> void:
@@ -831,6 +1167,98 @@ func _refresh_ally_orbits() -> void:
 		var ally: Ally = allies[index]
 		if is_instance_valid(ally):
 			ally.update_orbit_slot(index, allies.size())
+
+
+func _apply_horde_bonuses_to_allies() -> void:
+	var type_counts: Dictionary = _get_ally_type_counts()
+
+	for ally in allies:
+		if not is_instance_valid(ally):
+			continue
+
+		var ally_type: String = ally.ally_type
+		var same_type_count: int = int(type_counts.get(ally_type, 1))
+		var extra_copies: int = maxi(same_type_count - 1, 0)
+		var same_type_damage_bonus: float = same_type_damage_per_extra_copy * float(extra_copies)
+		ally.apply_horde_bonuses(
+			ally_damage_bonus,
+			same_type_damage_bonus,
+			ally_cooldown_multiplier,
+			ally_effect_duration_multiplier
+		)
+
+
+func _get_available_fusion_upgrades() -> Array[Dictionary]:
+	var fusion_upgrades: Array[Dictionary] = []
+	var type_level_counts: Dictionary = _get_ally_type_level_counts()
+
+	for key in type_level_counts.keys():
+		var count: int = int(type_level_counts[key])
+		if count < 3:
+			continue
+
+		var key_parts: PackedStringArray = String(key).split(":")
+		if key_parts.size() != 2:
+			continue
+
+		var ally_type: String = key_parts[0]
+		var ally_level: int = int(key_parts[1])
+		if ally_level >= 3:
+			continue
+
+		fusion_upgrades.append({
+			"id": "fuse_allies",
+			"name": "Fundir %s" % _format_ally_type_name(ally_type),
+			"description": "3 %s Nv.%d viram 1 %s Nv.%d." % [
+				_format_ally_type_name(ally_type),
+				ally_level,
+				_format_ally_type_name(ally_type),
+				ally_level + 1,
+			],
+			"ally_type": ally_type,
+			"ally_level": ally_level,
+		})
+
+	return fusion_upgrades
+
+
+func _apply_fusion(ally_type: String, ally_level: int) -> void:
+	var fusion_candidates: Array[Ally] = _get_fusion_candidates(ally_type, ally_level)
+	if fusion_candidates.size() < 3:
+		_spawn_feedback_text("Fusao indisponivel", player.global_position + Vector2(0.0, -34.0), Color(1.0, 0.72, 0.32))
+		return
+
+	var fusion_position: Vector2 = Vector2.ZERO
+	for candidate in fusion_candidates:
+		fusion_position += candidate.global_position
+	fusion_position /= float(fusion_candidates.size())
+
+	for candidate in fusion_candidates:
+		allies.erase(candidate)
+		candidate.queue_free()
+
+	var fused_level: int = mini(ally_level + 1, 3)
+	_spawn_ally(ally_type, fusion_position, fused_level, false)
+	allies_fused += 1
+	_spawn_feedback_text("Fusao!", fusion_position + Vector2(0.0, -48.0), Color(0.7, 1.0, 1.0))
+	_refresh_ally_orbits()
+	_apply_horde_bonuses_to_allies()
+
+
+func _get_fusion_candidates(ally_type: String, ally_level: int) -> Array[Ally]:
+	var candidates: Array[Ally] = []
+
+	for ally in allies:
+		if not is_instance_valid(ally):
+			continue
+		if ally.ally_type != ally_type or ally.ally_level != ally_level:
+			continue
+
+		candidates.append(ally)
+		if candidates.size() == 3:
+			break
+
+	return candidates
 
 
 func _on_player_died() -> void:
@@ -865,6 +1293,16 @@ func _clear_hostile_nodes_after_defeat() -> void:
 			orb.queue_free()
 	active_xp_orbs.clear()
 
+	for essence in active_capture_essences:
+		if is_instance_valid(essence):
+			essence.queue_free()
+	active_capture_essences.clear()
+
+	for pickup in active_pickups:
+		if is_instance_valid(pickup):
+			pickup.queue_free()
+	active_pickups.clear()
+
 
 func _on_match_won() -> void:
 	if _game_is_over:
@@ -883,11 +1321,12 @@ func _on_match_won() -> void:
 func _show_end_panel(result_title: String) -> void:
 	# O painel resume a partida usando os mesmos contadores mostrados no HUD/debug.
 	game_over_title_label.text = result_title
-	game_over_stats_label.text = "Tempo sobrevivido: %s\nNivel alcancado: %d\nInimigos derrotados: %d\nAliados convertidos: %d\nAliados no fim: %d/%d" % [
+	game_over_stats_label.text = "Tempo sobrevivido: %s\nNivel alcancado: %d\nInimigos derrotados: %d\nAliados convertidos: %d\nFusoes feitas: %d\nAliados no fim: %d/%d" % [
 		_format_elapsed_time(),
 		player_level,
 		enemies_defeated,
 		allies_converted,
+		allies_fused,
 		allies.size(),
 		ally_limit,
 	]
@@ -908,21 +1347,22 @@ func _on_player_health_changed(_current_health: int, _max_health: int) -> void:
 
 
 func _update_hud() -> void:
-	stats_label.text = "Vida: %d/%d\nNivel: %d\nXP: %d/%d\nTempo: %s\nMeta: %s\nPressao: %.0f%%\nVivos: %d/%d\nDerrotados: %d\nAliados: %d/%d\nConvertidos: %d" % [
+	stats_label.text = "RUN\nVida %d/%d\nTempo %s / %s\nPressao %.0f%%\n\nPROGRESSO\nNivel %d  XP %d/%d\nDerrotados %d\n\nHORDA\nAliados %d/%d\nEssencias %d  Pickups %d\nConvertidos %d  Fusoes %d" % [
 		player.current_health,
 		player.max_health,
-		player_level,
-		current_xp,
-		xp_to_next_level,
 		_format_elapsed_time(),
 		_format_remaining_time(),
 		_difficulty_progress * 100.0,
-		enemies.size(),
-		_current_max_enemies,
+		player_level,
+		current_xp,
+		xp_to_next_level,
 		enemies_defeated,
 		allies.size(),
 		ally_limit,
+		active_capture_essences.size(),
+		active_pickups.size(),
 		allies_converted,
+		allies_fused,
 	]
 	_update_debug_info()
 
@@ -946,7 +1386,7 @@ func _update_debug_info() -> void:
 	var spitter_ally_count: int = _count_allies_by_type("spitter")
 	var crawler_ally_count: int = _count_allies_by_type("crawler")
 	var shield_ally_count: int = _count_allies_by_type("shield")
-	debug_label.text = "DEBUG\nEstado: %s\nAtivos: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nS:%d B:%d J:%d T:%d A:%d R:%d E:%d\nAliados S:%d B:%d J:%d T:%d A:%d R:%d E:%d\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nRastro em: %.0fs\nAtirador em: %.0fs\nShield em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance conversao: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nUltimo upgrade: %s" % [
+	debug_label.text = "DEBUG\nEstado: %s\nAtivos: %s\nPressao: %.0f%%\nSpawn atual: %.2fs\nLimite atual: %d\nInimigos vivos: %d/%d\nS:%d B:%d J:%d T:%d A:%d R:%d E:%d\nAliados S:%d B:%d J:%d T:%d A:%d R:%d E:%d\nEssencias no chao: %d\nPickups: %d\nUltimo pickup: %s\nFusoes: %d\nFusoes prontas: %s\nUltimo spawn: %s\nUltima conversao: %s\nBats em: %.0fs\nJavali em: %.0fs\nRastro em: %.0fs\nAtirador em: %.0fs\nShield em: %.0fs\nTotem em: %.0fs\nTocando player: %d\nUltimo dano contato: %d\nTick contato: %.2fs\nTimer contato: %.2f\nSpawn margem: %.0f\nChance essencia: %.0f%%\nDano orbe: %d\nAtk intervalo: %.2fs\nBonus dano aliados: +%d\nCooldown aliados: %.0f%%\nBonus copia: %.0f%%\nUltimo upgrade: %s" % [
 		_get_debug_state_name(),
 		_format_enabled_enemy_types(),
 		_difficulty_progress * 100.0,
@@ -968,6 +1408,11 @@ func _update_debug_info() -> void:
 		spitter_ally_count,
 		crawler_ally_count,
 		shield_ally_count,
+		active_capture_essences.size(),
+		active_pickups.size(),
+		_last_pickup_type,
+		allies_fused,
+		_format_available_fusions(),
 		_last_spawned_enemy_type,
 		_last_converted_enemy_type,
 		maxf(bat_start_time - elapsed_time, 0.0),
@@ -985,6 +1430,8 @@ func _update_debug_info() -> void:
 		player.projectile_damage,
 		player.attack_interval,
 		ally_damage_bonus,
+		ally_cooldown_multiplier * 100.0,
+		same_type_damage_per_extra_copy * 100.0,
 		_last_upgrade_id,
 	]
 
@@ -1059,6 +1506,68 @@ func _count_allies_by_type(ally_type: String) -> int:
 			ally_count += 1
 
 	return ally_count
+
+
+func _get_ally_type_counts() -> Dictionary:
+	var type_counts: Dictionary = {}
+
+	for ally in allies:
+		if not is_instance_valid(ally):
+			continue
+
+		var ally_type: String = ally.ally_type
+		type_counts[ally_type] = int(type_counts.get(ally_type, 0)) + 1
+
+	return type_counts
+
+
+func _get_ally_type_level_counts() -> Dictionary:
+	var type_level_counts: Dictionary = {}
+
+	for ally in allies:
+		if not is_instance_valid(ally):
+			continue
+
+		var key: String = "%s:%d" % [ally.ally_type, ally.ally_level]
+		type_level_counts[key] = int(type_level_counts.get(key, 0)) + 1
+
+	return type_level_counts
+
+
+func _format_ally_type_name(ally_type: String) -> String:
+	match ally_type:
+		"bat":
+			return "Bat"
+		"boar":
+			return "Javali"
+		"totem":
+			return "Totem"
+		"spitter":
+			return "Atirador"
+		"crawler":
+			return "Rastejante"
+		"shield":
+			return "Escudo"
+		_:
+			return "Slime"
+
+
+func _format_available_fusions() -> String:
+	var fusion_upgrades: Array[Dictionary] = _get_available_fusion_upgrades()
+	if fusion_upgrades.is_empty():
+		return "-"
+
+	var formatted_fusions: String = ""
+	for fusion in fusion_upgrades:
+		if not formatted_fusions.is_empty():
+			formatted_fusions += ", "
+
+		formatted_fusions += "%s Nv.%d" % [
+			_format_ally_type_name(String(fusion["ally_type"])),
+			int(fusion["ally_level"]),
+		]
+
+	return formatted_fusions
 
 
 func _format_enabled_enemy_types() -> String:

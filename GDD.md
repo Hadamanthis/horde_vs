@@ -24,6 +24,21 @@ A graça do jogo está em transformar a ameaça em poder. Quanto mais inimigos o
 
 O jogador deve sentir que começou vulnerável, fugindo de monstros, mas aos poucos virou o centro de uma horda crescente. O prazer principal é ver os inimigos que antes ameaçavam o jogador se juntando a ele e destruindo ondas cada vez maiores.
 
+### 4.1 Identidade do protagonista
+
+A direção recomendada para a versão itch.io é que o jogador seja um pequeno **Overlord Necromante**, ainda fraco, tentando reconstruir sua horda.
+
+Visualmente, ele pode ser:
+
+* uma cabeça de caveira flutuante com manto curto;
+* olhos/energia verde ou ciano;
+* corpo pequeno para parecer vulnerável no começo;
+* silhueta simples e muito legível em top-down.
+
+Essa opção conversa bem com a mecânica de converter monstros, com o tema de cemitério/ruínas e com a fantasia de virar o centro de um exército. Evitar por enquanto um humano detalhado, porque exigiria animações mais complexas e poderia disputar leitura com os aliados.
+
+Nome de fantasia possível: **O Pequeno Overlord**.
+
 ## 5. Pilares de design
 
 ### 5.1 Transformar perigo em recurso
@@ -132,20 +147,28 @@ Características:
 
 Esse é o sistema principal do jogo.
 
-Quando um inimigo morre, existe uma chance de ele virar aliado.
+Quando um inimigo morre, existe uma chance de ele deixar uma essência de captura.
+
+No protótipo atual, a conversão pode acontecer automaticamente ao derrotar o inimigo. Para a direção final do MVP, a recomendação é transformar a conversão em um drop opcional: o jogador precisa coletar a essência para adicionar aquele inimigo à horda.
+
+Isso dá mais controle sobre a composição da run. O jogador pode ignorar uma captura que não combina com sua build atual, evitando a sensação de ficar à mercê de conversões indesejadas.
 
 ### Regras
 
 * Apenas inimigos comuns podem ser convertidos no MVP.
 * Chefes não podem ser convertidos.
-* Se o jogador atingiu o limite de aliados, o inimigo não é convertido.
-* A chance de conversão pode aumentar com upgrades.
+* Ao morrer, um inimigo conversível pode deixar uma essência de captura daquele tipo.
+* Se o jogador coletar a essência, ela vira um aliado equivalente ao inimigo de origem.
+* Se o jogador ignorar a essência, ela desaparece depois de alguns segundos.
+* Se o jogador atingiu o limite de aliados, a essência pode continuar no chão por um curto tempo, mas não pode ser coletada até haver espaço.
+* A chance de uma essência aparecer pode aumentar com upgrades.
 * Inimigos convertidos mantêm uma versão simplificada de sua habilidade original.
+* O drop de captura deve ser visualmente diferente do XP para evitar coleta acidental.
 
 ### Exemplo
 
 Um slime inimigo anda até o jogador e causa dano por contato.
-Quando convertido, vira um slime aliado que segue o jogador e bate em inimigos próximos.
+Quando derrotado, pode deixar uma essência de slime. Se o jogador coletar essa essência, ela vira um slime aliado que segue o jogador e bate em inimigos próximos.
 
 ## 12. Sistema de aliados
 
@@ -314,6 +337,30 @@ Inimigos derrotados deixam cristais de experiência.
 
 O jogador coleta cristais ao se aproximar.
 
+## 16.1 Pickups de partida
+
+Além de XP e essências de captura, inimigos podem deixar pickups raros que ajudam a run sem virar um sistema grande.
+
+### Pickup de vida
+
+Recupera uma quantidade fixa de vida do jogador.
+
+Regras iniciais:
+
+* Deve ser visualmente diferente de XP e essência de captura.
+* Deve curar sem ultrapassar a vida máxima.
+* Pode dropar mesmo se o jogador estiver com vida cheia, mas nesse caso tem pouco valor.
+
+### Ímã de almas
+
+Coleta todos os cristais de XP espalhados pelo mapa.
+
+Regras iniciais:
+
+* Deve afetar XP, não essências de captura. Essências continuam sendo uma escolha de composição.
+* Pode ser instantâneo no protótipo.
+* No futuro, pode puxar os cristais visualmente até o jogador para dar mais satisfação.
+
 Ao subir de nível, aparecem 3 opções de upgrade.
 
 ### Regras
@@ -323,7 +370,11 @@ Ao subir de nível, aparecem 3 opções de upgrade.
 * Upgrades podem ser comuns, raros ou lendários.
 * No MVP, não precisa mostrar raridade visual complexa.
 
-## 17. Upgrades
+## 17. Upgrades e builds de run
+
+Os upgrades devem ajudar o jogador a montar uma identidade para a run sem depender de cartas específicas demais para cada criatura.
+
+A preferência é usar upgrades genéricos que interagem com sistemas amplos: ataque, cooldown, quantidade de aliados, tipos repetidos, nível dos aliados, coleta e captura.
 
 ### 17.1 Upgrades do jogador
 
@@ -334,16 +385,34 @@ Ao subir de nível, aparecem 3 opções de upgrade.
 * +20 vida máxima
 * +10% alcance de coleta
 
-### 17.2 Upgrades de conversão
+### 17.2 Upgrades de horda
 
-* +10% chance de conversão
-* +3 limite de aliados
-* aliados causam +15% dano
+Esses upgrades devem afetar muitos aliados ao mesmo tempo e formar a base das builds.
+
+* aliados causam +10% dano
+* aliados reduzem todos os cooldowns de ataque em 10%
 * aliados recebem +20% vida
-* aliados atacam +10% mais rápido
-* aliados explodem ao morrer
+* +3 limite de aliados
+* +10% chance de essência de captura aparecer
+* +10% duração de efeitos criados por aliados, como aura, rastro e bloqueio
+* +10% alcance de ataque dos aliados
+* aliados causam +5% dano para cada cópia adicional do mesmo tipo na horda. Um aliado sozinho não conta; 2 slimes geram +5% para slimes, 3 slimes geram +10%, e assim por diante
+* aliados de nível 2 ou maior causam +15% dano
+* aliados de nível 3 reduzem seus cooldowns em 15%
 
-### 17.3 Upgrades especiais
+### 17.3 Upgrades de composição
+
+Upgrades de composição podem existir, mas devem continuar genéricos. Eles não devem parecer uma carta feita para apenas um monstro.
+
+Exemplos:
+
+* aliados corpo a corpo ganham +15% velocidade de ataque
+* aliados à distância ganham +1 perfuração ou +15% alcance
+* aliados defensivos aumentam a resistência do jogador quando estão perto dele
+* efeitos de área duram +20%
+* criaturas rápidas ganham +20% velocidade durante ataques especiais
+
+### 17.4 Upgrades especiais
 
 #### Horda Faminta
 
@@ -351,45 +420,158 @@ Aliados causam mais dano quanto maior for a quantidade de aliados ativos.
 
 #### Pacto Instável
 
-Aumenta muito a chance de conversão, mas reduz a vida máxima do jogador.
+Aumenta muito a chance de essência de captura aparecer, mas reduz a vida máxima do jogador.
 
-#### Fusão Sombria
+#### Ritual de Condensação
 
-A cada 3 aliados do mesmo tipo, eles se fundem em uma versão maior e mais forte.
+Melhora fusões: aliados fundidos recebem um bônus extra de dano ou cooldown.
 
-Para o MVP, a fusão pode ficar como stretch goal.
+### 17.5 Direção de design
 
-## 18. Sistema de fusão
+O jogador deve sentir que está montando uma build durante a partida, mas sem precisar entender uma árvore complexa.
+
+As melhores decisões devem nascer de perguntas simples:
+
+* Quero muitos aliados fracos ou poucos aliados fortes?
+* Quero repetir tipos para ganhar bônus de cópia?
+* Quero aceitar essa essência agora ou ignorar porque ela atrapalha minha composição?
+* Quero gastar espaço da horda com criaturas defensivas, dano à distância ou dano agressivo?
+
+## 18. Sistema de níveis e fusão de aliados
 
 ### Status
 
-Não obrigatório para o primeiro MVP.
+Não obrigatório para o primeiro loop jogável, mas recomendado como uma das próximas grandes adições depois que captura opcional e upgrades de horda estiverem funcionando.
 
 ### Conceito
 
-Quando o jogador possui 3 aliados iguais, eles podem virar uma versão superior.
+Aliados e inimigos podem ter nível de 1 a 3.
+
+* Nível 1: criatura comum.
+* Nível 2: versão melhorada.
+* Nível 3: versão rara e forte.
+
+Para aliados, níveis são obtidos por fusão. A regra inicial recomendada é:
+
+* 3 aliados iguais de nível 1 podem virar 1 aliado igual de nível 2.
+* 3 aliados iguais de nível 2 podem virar 1 aliado igual de nível 3.
+* Nível 3 é o limite inicial.
 
 Exemplo:
 
-3 slimes pequenos viram 1 slime grande.
+3 slimes nível 1 viram 1 slime nível 2.
+3 slimes nível 2 viram 1 slime nível 3.
 
-### Benefício
+### Por que 3 cópias?
+
+Começar com 3 é uma boa regra porque é fácil de entender, cria objetivo de curto prazo e já é comum em jogos de fusão.
+
+Se parecer difícil demais montar fusões durante uma run curta, testar 2 cópias para o nível 2 e 3 cópias para o nível 3. Se parecer fácil demais, manter 3 e reduzir um pouco a chance de captura.
+
+### Como a fusão deve acontecer
+
+A fusão não deve acontecer automaticamente no momento em que o jogador tiver 3 cópias. O jogador precisa manter controle sobre a composição.
+
+Recomendação inicial:
+
+* Quando o jogador tiver fusão disponível, mostrar isso na tela de level up como uma opção especial.
+* A opção deve explicar claramente o resultado, por exemplo: "Fundir 3 Slimes Nv.1 em 1 Slime Nv.2".
+* Ao escolher a fusão, os aliados usados somem da composição original e são substituídos pelo aliado criado.
+* Se houver mais de 3 cópias, fundir as 3 mais fracas ou mais antigas.
+* Fusões não devem consumir essência de captura; elas consomem aliados já ativos.
+
+Essa abordagem evita interromper a ação com uma janela extra no meio do combate e encaixa a fusão no mesmo ritmo de decisão dos upgrades.
+
+### Alternativa futura
+
+Depois do MVP, pode existir uma pequena tela de gerenciamento da horda durante pausas, mas isso não deve ser necessário agora.
+
+### Benefícios
 
 * menos poluição visual;
 * sensação de evolução;
 * cria objetivo secundário.
+* faz capturas repetidas continuarem interessantes;
+* permite escolher entre quantidade e qualidade.
 
-### Risco
+### Riscos
 
 Pode complicar o balanceamento.
 
-### Recomendação
+Pode reduzir demais a quantidade visual da horda se os aliados fundidos ficarem fortes demais.
 
-Implementar apenas depois que o loop base estiver divertido.
+Pode deixar o jogador confuso se a UI não mostrar quantas cópias existem e quais fusões estão disponíveis.
+
+### Direção visual para aliados aprimorados
+
+Mesmo sem sprites finais, versões aprimoradas precisam ser fáceis de reconhecer.
+
+Para o protótipo:
+
+* Nível 1 usa o visual normal.
+* Nível 2 usa escala um pouco maior, contorno mais forte e um pequeno brilho.
+* Nível 3 usa escala maior que nível 2, contorno duplo ou cor de destaque, e um efeito simples de pulso.
+* Evitar aumentar demais o tamanho, para não atrapalhar leitura e colisões.
+* Usar marcador pequeno de nível acima do aliado apenas se a tela continuar legível.
+
+O ideal é que o jogador reconheça o nível pelo corpo da criatura antes de precisar ler texto.
+
+### Habilidades finais de aliados nível 3
+
+Todo aliado que chega ao nível 3 deve ganhar uma melhoria especial reconhecível. A habilidade final deve ser uma evolução da identidade original do monstro, não um poder aleatório.
+
+Regras:
+
+* deve ser fácil de explicar em uma frase;
+* deve reaproveitar o modo de ataque do aliado quando possível;
+* deve ter feedback visual próprio;
+* não deve exigir controle manual do jogador.
+
+#### Slime Nv.3 — Golpe em Arco
+
+O slime bate em um arco à frente do movimento/ataque, acertando vários inimigos próximos.
+
+Função: transformar o slime de corpo a corpo simples em limpador de multidão curta.
+
+#### Bat Nv.3 — Caçada em Cadeia
+
+Depois de morder um inimigo, o bat pode saltar para outro alvo próximo uma ou duas vezes.
+
+Função: preservar a fantasia de caçador rápido.
+
+#### Boar Nv.3 — Investida Sísmica
+
+A investida deixa uma onda curta no fim do caminho, causando dano em área.
+
+Função: manter o javali como dano explosivo e abrir espaço.
+
+#### Totem Nv.3 — Aura Dupla
+
+O totem cria uma aura maior ou dois pulsos antes de sumir.
+
+Função: reforçar controle de área.
+
+#### Spitter Nv.3 — Tiro Dividido
+
+O disparo se divide em projéteis menores ao acertar ou após certa distância.
+
+Função: melhorar dano à distância contra grupos.
+
+#### Crawler Nv.3 — Rastro Venenoso Maior
+
+O rastro dura mais e pulsa com dano em intervalos claros.
+
+Função: controle de chão e negação de área.
+
+#### Shield Nv.3 — Barreira Circular
+
+Periodicamente cria uma barreira curta ao redor do jogador ou empurra inimigos em volta.
+
+Função: defesa e proteção da formação.
 
 ## 19. Mapa
 
-### MVP
+### MVP validado
 
 Um único mapa aberto.
 
@@ -412,18 +594,165 @@ Evitar labirintos no MVP.
 
 O mapa deve permitir movimento livre, fuga e circulação em volta da horda.
 
+### Versão itch.io
+
+Para a versão itch.io, o jogo deve ter pelo menos 3 fases/arenas. Elas não precisam ter regras totalmente diferentes, mas devem mudar leitura, ritmo e composição visual.
+
+#### Arena 1 — Cemitério dos Fracos
+
+Função: arena inicial e mais legível.
+
+Características:
+
+* tamanho médio;
+* poucos obstáculos sólidos;
+* muitas lápides quebráveis;
+* árvores secas nas bordas;
+* boa para aprender captura, XP e fusão.
+
+#### Arena 2 — Bosque das Ossadas
+
+Função: arena com mais navegação e bloqueios.
+
+Características:
+
+* tamanho maior;
+* árvores com colisão;
+* troncos e pedras criando rotas;
+* clareiras abertas conectadas por corredores largos;
+* cuidado para não virar labirinto injusto.
+
+#### Arena 3 — Ruínas do Overlord
+
+Função: arena final mais intensa.
+
+Características:
+
+* tamanho menor ou médio, com pressão mais alta;
+* colunas quebradas com colisão;
+* altares quebráveis;
+* mais objetos que geram pickups;
+* visual mais mágico, com símbolos no chão e energia necromântica.
+
+### Objetos de mapa
+
+O mapa deve ter dois tipos principais de objetos.
+
+#### Objetos com colisão
+
+Servem para dar forma à arena e mudar rotas.
+
+Exemplos:
+
+* árvores;
+* pedras grandes;
+* colunas;
+* mausoléus pequenos;
+* ruínas.
+
+Regras:
+
+* devem bloquear jogador e inimigos;
+* não devem formar becos apertados demais;
+* precisam ser visualmente óbvios como sólidos;
+* devem existir em pouca quantidade no começo.
+
+#### Objetos quebráveis
+
+Servem como micro-recompensas no mapa.
+
+Exemplos:
+
+* lápides rachadas;
+* vasos;
+* caixotes;
+* ossários;
+* altares frágeis.
+
+Regras:
+
+* podem receber dano de ataques do jogador e aliados;
+* podem dropar vida, ímã de almas ou XP;
+* devem quebrar com feedback visual claro;
+* não devem competir com essências de captura.
+
 ## 20. Arte
 
 ### Direção visual
 
-Pixel art simples ou arte 2D minimalista.
+Direção recomendada: **dark fantasy fofo e legível**, com pixel art simples ou sprites 2D de baixa resolução.
+
+O jogo deve parecer sombrio, mas não realista. A leitura vem antes do detalhe.
+
+Paleta inicial:
+
+* chão escuro dessaturado;
+* inimigos com tons quentes/vermelhos/roxos;
+* aliados com contorno ou energia verde/ciano;
+* pickups com cores altamente distintas;
+* efeitos de captura/fusão com verde, ciano e roxo.
+
+Evitar que tudo fique marrom, cinza ou roxo demais. Cada arena deve ter uma cor dominante secundária própria, mas os personagens precisam continuar legíveis em todas elas.
+
+### Estilo dos sprites
+
+Recomendação inicial:
+
+* player, inimigos e aliados em canvas 64x64, com personagem ativo perto de 40-56 px;
+* bosses em 96x96 ou 128x128;
+* pickups em 16x16 ou 24x24;
+* objetos de mapa em 16x16, 32x32 ou 48x48;
+* silhuetas grandes e simples;
+* poucos frames de animação;
+* contraste alto entre corpo e contorno;
+* versões aliadas reaproveitam a silhueta do inimigo, mas com energia/contorno aliado.
+
+O player, monstros e mapa precisam conversar visualmente. Se o protagonista for o Pequeno Overlord, o mundo deve parecer um território necromântico: cemitérios, ossos, ruínas, árvores secas, altares e magia verde/ciano.
+
+### Produção de sprites
+
+Para a versão itch.io, usar sprites reais em vez de formas vetoriais de protótipo.
+
+Cada monstro deve ter 3 níveis visuais:
+
+* Nv.1: forma base;
+* Nv.2: mesma silhueta com detalhe novo, escala ou energia maior;
+* Nv.3: forma final memorável, ainda reconhecível como o mesmo monstro.
+
+O Overlord já existe com várias direções, mas isso não deve virar exigência para todos os sprites. Para controlar escopo, inimigos e aliados podem começar com sprite estático em uma direção principal. Direções extras entram apenas se melhorarem muito a leitura do comportamento.
+
+Começar com sprites estáticos por nível. Animações podem entrar depois, quando a direção visual estiver aprovada.
+
+### Revisão do roster de monstros
+
+Os comportamentos do protótipo podem continuar, mas os monstros precisam ser memoráveis e coerentes com o tema.
+
+Recomendações:
+
+* Slime: manter.
+* Bat: manter ou transformar em Morcego de Osso.
+* Boar: trocar por Carneiro Caveira, mantendo comportamento de investida.
+* Totem: manter como Totem Profano.
+* Spitter: trocar por Crânio Cuspidor ou Cuspideira Ossária.
+* Crawler: trocar por Verme de Ossos.
+* Shield: trocar por Guardião Escudo.
+
+### Prioridades de efeitos visuais
+
+Antes de adicionar mais conteúdo, melhorar efeitos de ações principais:
+
+* XP vindo visualmente em direção ao jogador quando coletado por magnetismo ou ímã de almas;
+* absorção do XP no jogador com pequeno brilho;
+* cura com pulso verde/vermelho claro no jogador;
+* fusão com explosão curta ou anel de energia;
+* essência de captura com silhueta do tipo capturável;
+* objeto quebrável com estilhaços simples.
 
 ### Recomendação para iniciante
 
 Usar sprites pequenos e simples:
 
-* personagem 16x16 ou 32x32;
-* inimigos 16x16 ou 32x32;
+* personagem e inimigos em canvas 64x64;
 * projéteis simples;
 * efeitos com partículas.
 
@@ -538,6 +867,7 @@ Enemy.tscn
 Ally.tscn
 Projectile.tscn
 XPOrb.tscn
+Pickup.tscn
 UpgradeCard.tscn
 HUD.tscn
 MainMenu.tscn
@@ -650,8 +980,12 @@ O jogo só é considerado MVP quando tiver:
 Para publicar na itch.io com dignidade, precisa ter:
 
 * partida de 8 a 12 minutos;
+* pelo menos 3 arenas/fases diferentes;
+* objetos de mapa com colisão;
+* objetos quebráveis que podem gerar pickups;
 * 4 inimigos;
 * 3 tipos de aliados;
+* habilidades finais para aliados nível 3;
 * 1 boss;
 * 12 a 15 upgrades;
 * tela inicial;
@@ -659,16 +993,16 @@ Para publicar na itch.io com dignidade, precisa ter:
 * tela de derrota;
 * música;
 * efeitos sonoros;
+* estilo de arte definido e coerente entre player, monstros, mapas e pickups;
+* efeitos visuais melhores para XP, cura, fusão, captura e quebra de objetos;
 * página da itch.io com descrição, controles e GIF curto.
 
 ## 28. Stretch goals
 
 Adicionar apenas se o jogo base já estiver divertido.
 
-* sistema de fusão de aliados;
 * mais um personagem jogável;
 * upgrades raros;
-* mapa alternativo;
 * conquistas internas;
 * salvamento de recorde;
 * modo infinito;
@@ -677,9 +1011,8 @@ Adicionar apenas se o jogo base já estiver divertido.
 
 ## 29. O que não fazer na primeira versão
 
-Evitar:
+Evitar antes da versão itch.io mínima:
 
-* múltiplos mapas;
 * história longa;
 * loja permanente;
 * árvore de habilidades;
@@ -775,7 +1108,7 @@ Solução: inimigos à distância, boss com ataques em área e upgrades com trad
 
 ### Risco 3: escopo crescer
 
-Solução: fechar a primeira versão com apenas 1 mapa, 4 inimigos e 1 personagem.
+Solução: fechar a primeira versão itch.io com 3 arenas pequenas, 1 personagem, poucos objetos de mapa reutilizáveis e habilidades finais simples para aliados nível 3.
 
 ### Risco 4: performance ruim com muitos inimigos
 
@@ -794,3 +1127,13 @@ Antes de pensar em arte, menu ou boss, fazer uma cena com:
 * aliados dando dano nos inimigos.
 
 Se essa cena for divertida por 2 minutos, o jogo tem futuro.
+
+## Nota de direcao visual - niveis dos monstros
+
+A direcao atual para sprites de monstros e aliados e tratar cada nivel como uma transformacao causada pelo Overlord:
+
+* Nv.1: criatura base, mais natural/selvagem, com poucos sinais necromanticos.
+* Nv.2: versao tocada pelo Overlord, mantendo a silhueta mas ganhando caveira, osso, rachaduras ou energia verde/ciano.
+* Nv.3: forma final necromantica memoravel, ainda reconhecivel como o mesmo monstro.
+
+Os sprites atuais com aparencia de caveira/ossos devem ser usados como referencia de Nv.2. A proxima leva de arte deve criar versoes Nv.1 mais simples, para que fusoes e melhorias parecam uma corrupcao/evolucao visual clara.

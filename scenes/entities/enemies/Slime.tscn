@@ -1,45 +1,42 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://blaarfhns1sfb"]
 
-[ext_resource type="Script" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://vpwivemeuai2" path="res://scripts/entities/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Texture2D" uid="uid://dar5sugjsk2q6" path="res://sprites/enemies/level_1/individual/slime_level_1_64.png" id="2_ot8oy"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_slime"]
-radius = 10.0
 
-[node name="Slime" type="CharacterBody2D"]
+[node name="Slime" type="CharacterBody2D" unique_id=1544068435]
 collision_layer = 0
 collision_mask = 0
 script = ExtResource("1_enemy")
-max_health = 24
-speed = 68.0
-contact_damage = 6
-contact_range = 23.0
-enemy_type = "slime"
-xp_value = 1
 separation_radius = 22.0
 separation_force = 0.45
-outline_color = Color(0.18, 0.02, 0.02, 1)
-body_color = Color(0.9, 0.22, 0.2, 1)
-eye_color = Color(0.08, 0.01, 0.01, 1)
 
-[node name="Visual" type="Node2D" parent="."]
+[node name="Visual" type="Node2D" parent="." unique_id=216242986]
+visible = false
 
-[node name="Outline" type="Polygon2D" parent="Visual"]
+[node name="Outline" type="Polygon2D" parent="Visual" unique_id=916840668]
 color = Color(0.18, 0.02, 0.02, 1)
 polygon = PackedVector2Array(0, -12, 9, -9, 12, 0, 9, 9, 0, 12, -9, 9, -12, 0, -9, -9)
 
-[node name="Body" type="Polygon2D" parent="Visual"]
+[node name="Body" type="Polygon2D" parent="Visual" unique_id=425981955]
 color = Color(0.9, 0.22, 0.2, 1)
 polygon = PackedVector2Array(0, -9, 7, -7, 9, 0, 7, 7, 0, 9, -7, 7, -9, 0, -7, -7)
 
-[node name="LeftEye" type="Polygon2D" parent="Visual"]
-color = Color(0.08, 0.01, 0.01, 1)
+[node name="LeftEye" type="Polygon2D" parent="Visual" unique_id=1141508102]
 position = Vector2(-3, -2)
-polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
-
-[node name="RightEye" type="Polygon2D" parent="Visual"]
 color = Color(0.08, 0.01, 0.01, 1)
-position = Vector2(3, -2)
 polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="RightEye" type="Polygon2D" parent="Visual" unique_id=1967493623]
+position = Vector2(3, -2)
+color = Color(0.08, 0.01, 0.01, 1)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=400633323]
+position = Vector2(0, 2.3841858e-07)
+scale = Vector2(0.65, 0.65)
+texture = ExtResource("2_ot8oy")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1728152548]
 shape = SubResource("CircleShape2D_slime")

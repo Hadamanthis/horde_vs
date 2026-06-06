@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="1_player"]
+[ext_resource type="Texture2D" path="res://sprites/overlord/generated/overlord_front_64.png" id="2_overlord"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -12,18 +13,59 @@ script = ExtResource("1_player")
 
 [node name="Visual" type="Node2D" parent="."]
 
-[node name="Outline" type="Polygon2D" parent="Visual"]
-color = Color(0.06, 0.12, 0.18, 1)
-polygon = PackedVector2Array(0, -15, 10, -10, 15, 0, 10, 10, 0, 15, -10, 10, -15, 0, -10, -10)
+[node name="Shadow" type="Polygon2D" parent="Visual"]
+color = Color(0.02, 0.015, 0.03, 0.72)
+position = Vector2(0, 11)
+polygon = PackedVector2Array(0, -5, 15, 0, 0, 5, -15, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual"]
+position = Vector2(0, -7)
+texture = ExtResource("2_overlord")
+
+[node name="CloakOutline" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.025, 0.015, 0.045, 1)
+polygon = PackedVector2Array(0, -15, 13, -5, 11, 15, 4, 20, 0, 15, -4, 20, -11, 15, -13, -5)
+
+[node name="Cloak" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.16, 0.08, 0.28, 1)
+polygon = PackedVector2Array(0, -12, 10, -4, 8, 13, 3, 16, 0, 12, -3, 16, -8, 13, -10, -4)
+
+[node name="SkullOutline" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.03, 0.025, 0.04, 1)
+position = Vector2(0, -9)
+polygon = PackedVector2Array(0, -13, 9, -8, 11, 2, 7, 10, 2, 13, -2, 13, -7, 10, -11, 2, -9, -8)
 
 [node name="Body" type="Polygon2D" parent="Visual"]
-color = Color(0.24, 0.78, 1, 1)
-polygon = PackedVector2Array(0, -11, 8, -8, 11, 0, 8, 8, 0, 11, -8, 8, -11, 0, -8, -8)
+visible = false
+color = Color(0.86, 0.88, 0.78, 1)
+position = Vector2(0, -9)
+polygon = PackedVector2Array(0, -10, 7, -6, 8, 2, 5, 8, 2, 10, -2, 10, -5, 8, -8, 2, -7, -6)
 
-[node name="Eye" type="Polygon2D" parent="Visual"]
-color = Color(0.02, 0.04, 0.06, 1)
-position = Vector2(4, -3)
+[node name="LeftEye" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.3, 1, 0.78, 1)
+position = Vector2(-3, -11)
 polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="RightEye" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.3, 1, 0.78, 1)
+position = Vector2(3, -11)
+polygon = PackedVector2Array(0, -2, 2, 0, 0, 2, -2, 0)
+
+[node name="Crown" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.7, 1, 0.35, 1)
+position = Vector2(0, -22)
+polygon = PackedVector2Array(-8, 4, -6, -3, -2, 2, 0, -5, 2, 2, 6, -3, 8, 4)
+
+[node name="Aura" type="Polygon2D" parent="Visual"]
+visible = false
+color = Color(0.22, 1, 0.72, 0.24)
+polygon = PackedVector2Array(0, -22, 16, -9, 18, 8, 6, 22, -6, 22, -18, 8, -16, -9)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_player")

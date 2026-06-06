@@ -1,0 +1,49 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/arena.gd" id="1_arena"]
+
+[node name="OverlordRuinsArena" type="Node2D"]
+script = ExtResource("1_arena")
+arena_name = "Ruinas do Overlord"
+arena_size = Vector2(3100, 2100)
+ground_color = Color(0.085, 0.08, 0.1, 1)
+border_color = Color(0.32, 0.26, 0.38, 1)
+grid_color = Color(0.18, 0.15, 0.22, 0.36)
+grid_size = 128.0
+
+[node name="Ground" type="Polygon2D" parent="."]
+z_index = -20
+
+[node name="Decor" type="Node2D" parent="."]
+z_index = -10
+
+[node name="RuinSlabA" type="Polygon2D" parent="Decor"]
+position = Vector2(-1040, -610)
+rotation = -0.18
+color = Color(0.24, 0.22, 0.28, 0.9)
+polygon = PackedVector2Array(-100, -24, 90, -42, 112, 25, -86, 45)
+
+[node name="RuinSlabB" type="Polygon2D" parent="Decor"]
+position = Vector2(920, -455)
+rotation = 0.3
+color = Color(0.2, 0.19, 0.25, 0.88)
+polygon = PackedVector2Array(-88, -32, 82, -20, 96, 38, -96, 30)
+
+[node name="RuinSlabC" type="Polygon2D" parent="Decor"]
+position = Vector2(175, 575)
+rotation = -0.45
+color = Color(0.23, 0.21, 0.28, 0.86)
+polygon = PackedVector2Array(-112, -20, 75, -46, 118, 14, -70, 52)
+
+[node name="SigilA" type="Polygon2D" parent="Decor"]
+position = Vector2(-285, -120)
+color = Color(0.45, 0.24, 0.62, 0.28)
+polygon = PackedVector2Array(0, -90, 78, -45, 78, 45, 0, 90, -78, 45, -78, -45)
+
+[node name="SigilB" type="Polygon2D" parent="Decor"]
+position = Vector2(640, 390)
+color = Color(0.35, 0.58, 0.52, 0.2)
+polygon = PackedVector2Array(0, -64, 58, -30, 58, 30, 0, 64, -58, 30, -58, -30)
+
+[node name="Border" type="Line2D" parent="."]
+z_index = -5

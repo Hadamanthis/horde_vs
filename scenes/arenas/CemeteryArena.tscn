@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/arena.gd" id="1_arena"]
+
+[node name="CemeteryArena" type="Node2D"]
+script = ExtResource("1_arena")
+arena_name = "Cemiterio dos Fracos"
+arena_size = Vector2(2200, 1550)
+ground_color = Color(0.055, 0.105, 0.085, 1)
+border_color = Color(0.22, 0.34, 0.27, 1)
+grid_color = Color(0.12, 0.18, 0.145, 0.38)
+grid_size = 88.0
+
+[node name="Ground" type="Polygon2D" parent="."]
+z_index = -20
+
+[node name="GridAnchor" type="Node2D" parent="."]
+z_index = -15
+
+[node name="Decor" type="Node2D" parent="."]
+z_index = -10
+
+[node name="TombstoneA" type="Polygon2D" parent="Decor"]
+position = Vector2(-710, -395)
+color = Color(0.31, 0.36, 0.34, 1)
+polygon = PackedVector2Array(-22, 28, -22, -12, -10, -28, 10, -28, 22, -12, 22, 28)
+
+[node name="TombstoneB" type="Polygon2D" parent="Decor"]
+position = Vector2(585, -260)
+color = Color(0.25, 0.31, 0.3, 1)
+polygon = PackedVector2Array(-18, 24, -18, -8, -7, -24, 8, -24, 18, -8, 18, 24)
+
+[node name="TombstoneC" type="Polygon2D" parent="Decor"]
+position = Vector2(-330, 410)
+color = Color(0.29, 0.34, 0.33, 1)
+polygon = PackedVector2Array(-20, 26, -20, -10, -8, -26, 9, -26, 20, -10, 20, 26)
+
+[node name="BonePatchA" type="Polygon2D" parent="Decor"]
+position = Vector2(340, 305)
+color = Color(0.64, 0.66, 0.57, 0.72)
+polygon = PackedVector2Array(-48, -4, -20, -12, 42, -2, 48, 8, 15, 14, -44, 6)
+
+[node name="BonePatchB" type="Polygon2D" parent="Decor"]
+position = Vector2(-845, 210)
+rotation = 0.5
+color = Color(0.58, 0.61, 0.52, 0.65)
+polygon = PackedVector2Array(-34, -6, 20, -12, 38, 0, 16, 12, -38, 7)
+
+[node name="Border" type="Line2D" parent="."]
+z_index = -5
